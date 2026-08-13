@@ -235,9 +235,11 @@ button{
   text-align:center;
 }
 
-/*
-14 mm wide × 40 mm tall tag
-*/
+
+/* ======================================
+   PHYSICAL TAG
+   14 mm wide × 40 mm tall
+====================================== */
 
 #labels{
   display:grid;
@@ -260,10 +262,15 @@ button{
   outline:1px solid #ddd;
 }
 
+
+/* ======================================
+   SQUARE DATA MATRIX
+====================================== */
+
 .matrix-area{
   width:12.4mm;
-  height:32.5mm;
-  flex:0 0 32.5mm;
+  height:14mm;
+  flex:0 0 14mm;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -275,9 +282,14 @@ button{
   image-rendering:pixelated;
 }
 
+
+/* ======================================
+   HUMAN READABLE PLANT ID
+====================================== */
+
 .label-id{
   width:100%;
-  height:5.5mm;
+  height:5mm;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -290,6 +302,21 @@ button{
   white-space:nowrap;
   text-align:center;
 }
+
+
+/* ======================================
+   REMAINING BLANK TAG SPACE
+====================================== */
+
+.label-spacer{
+  flex:1;
+  width:100%;
+}
+
+
+/* ======================================
+   PRINT
+====================================== */
 
 @media print{
   @page{
@@ -357,6 +384,7 @@ button{
 
   </div>
 
+
   <div class="section">
 
     <div class="section-title">
@@ -388,6 +416,7 @@ button{
     ></div>
 
   </div>
+
 
   <div class="section">
 
@@ -422,14 +451,14 @@ button{
       </div>
 
       <div class="setting">
-        <label>Matrix max height (mm)</label>
+        <label>Matrix size (mm)</label>
 
         <input
-          id="matrixHeight"
+          id="matrixSize"
           type="number"
-          value="27"
-          min="15"
-          max="33"
+          value="11.5"
+          min="8"
+          max="12"
           step=".5"
         >
       </div>
@@ -437,6 +466,7 @@ button{
     </div>
 
   </div>
+
 
   <div class="buttons">
 
@@ -489,6 +519,7 @@ button{
 
 </div>
 
+
 <div
   class="preview-title"
   id="previewTitle"
@@ -497,7 +528,9 @@ button{
   Label preview — print at 100% / Actual Size
 </div>
 
+
 <div id="labels"></div>
+
 
 <script src="https://unpkg.com/bwip-js/dist/bwip-js-min.js"></script>
 
@@ -510,10 +543,12 @@ let oldIds=[];
 let remakeIds=[];
 let lastGeneratedIds=[];
 
+
 document.addEventListener(
   'DOMContentLoaded',
   initLabels
 );
+
 
 function initLabels(){
   const params=
@@ -541,6 +576,7 @@ function initLabels(){
   renderRemakes();
 }
 
+
 function parseIds(value){
   const matches=
     String(value||'')
@@ -552,6 +588,7 @@ function parseIds(value){
     ...new Set(matches)
   ];
 }
+
 
 function renderNewPlants(){
   const container=
@@ -589,6 +626,7 @@ function renderNewPlants(){
     '</div>';
 }
 
+
 function renderOldSelect(){
   const select=
     document.getElementById(
@@ -614,6 +652,7 @@ function renderOldSelect(){
       .join('');
 }
 
+
 function addOldPlant(){
   const select=
     document.getElementById(
@@ -635,6 +674,7 @@ function addOldPlant(){
   clearGeneratedPreview();
 }
 
+
 function removeRemake(id){
   remakeIds=
     remakeIds.filter(
@@ -646,6 +686,7 @@ function removeRemake(id){
 
   clearGeneratedPreview();
 }
+
 
 function renderRemakes(){
   const container=
@@ -678,6 +719,7 @@ function renderRemakes(){
       .join('');
 }
 
+
 function clearGeneratedPreview(){
   lastGeneratedIds=[];
 
@@ -694,6 +736,7 @@ function clearGeneratedPreview(){
   ).style.display='none';
 }
 
+
 function getSelectedIds(){
   return [
     ...new Set(
@@ -704,6 +747,11 @@ function getSelectedIds(){
     )
   ];
 }
+
+
+/* ======================================
+   GENERATE SQUARE DATA MATRIX LABELS
+====================================== */
 
 function generateLabels(){
   if(typeof bwipjs==='undefined'){
@@ -739,16 +787,13 @@ function generateLabels(){
       ).value
     )||40;
 
-  const maxMatrixHeight=
-    Number(
-      document.getElementById(
-        'matrixHeight'
-      ).value
-    )||30;
-
-  const maxMatrixWidth=
-    Math.max(
-      6,
+  const matrixSize=
+    Math.min(
+      Number(
+        document.getElementById(
+          'matrixSize'
+        ).value
+      )||11.5,
       labelWidth-2
     );
 
@@ -767,6 +812,7 @@ function generateLabels(){
   let generatedCount=0;
 
   ids.forEach(id=>{
+
     const label=
       document.createElement(
         'div'
@@ -781,6 +827,7 @@ function generateLabels(){
     label.style.height=
       labelHeight+'mm';
 
+
     const matrixArea=
       document.createElement(
         'div'
@@ -789,33 +836,34 @@ function generateLabels(){
     matrixArea.className=
       'matrix-area';
 
-    matrixArea.style.height=
-      Math.max(
-        10,
-        labelHeight-7.5
-      )+'mm';
 
-    matrixArea.style.flexBasis=
-      Math.max(
-        10,
-        labelHeight-7.5
-      )+'mm';
-
-    const rawCanvas=
+    const canvas=
       document.createElement(
         'canvas'
       );
 
     try{
       bwipjs.toCanvas(
-  rawCanvas,
-  {
-    bcid:'datamatrixrectangular',
-    text:id,
-    scale:16,
-    padding:4
-  }
-);
+        canvas,
+        {
+          bcid:'datamatrix',
+          text:id,
+
+          /*
+          Integer module scale.
+          This gives bwip-js a clean,
+          high-resolution square source.
+          */
+          scale:16,
+
+          /*
+          Explicit white quiet area.
+          */
+          padding:3,
+
+          backgroundcolor:'FFFFFF'
+        }
+      );
 
     }catch(error){
       console.error(
@@ -826,20 +874,16 @@ function generateLabels(){
       return;
     }
 
-    const verticalCanvas=
-      makeVerticalCanvas(
-        rawCanvas
-      );
+    canvas.style.width=
+      matrixSize+'mm';
 
-    sizeMatrixCanvas(
-      verticalCanvas,
-      maxMatrixWidth,
-      maxMatrixHeight
-    );
+    canvas.style.height=
+      matrixSize+'mm';
 
     matrixArea.appendChild(
-      verticalCanvas
+      canvas
     );
+
 
     const idText=
       document.createElement(
@@ -852,6 +896,16 @@ function generateLabels(){
     idText.textContent=
       id;
 
+
+    const spacer=
+      document.createElement(
+        'div'
+      );
+
+    spacer.className=
+      'label-spacer';
+
+
     label.appendChild(
       matrixArea
     );
@@ -860,12 +914,18 @@ function generateLabels(){
       idText
     );
 
+    label.appendChild(
+      spacer
+    );
+
+
     container.appendChild(
       label
     );
 
     generatedCount++;
   });
+
 
   if(!generatedCount){
     alert(
@@ -894,76 +954,10 @@ function generateLabels(){
   );
 }
 
-function makeVerticalCanvas(source){
-  if(source.height>=source.width){
-    return source;
-  }
 
-  const output=
-    document.createElement(
-      'canvas'
-    );
-
-  output.width=
-    source.height;
-
-  output.height=
-    source.width;
-
-  const ctx=
-    output.getContext(
-      '2d'
-    );
-
-  ctx.imageSmoothingEnabled=false;
-
-  ctx.translate(
-    output.width/2,
-    output.height/2
-  );
-
-  ctx.rotate(
-    Math.PI/2
-  );
-
-  ctx.drawImage(
-    source,
-    -source.width/2,
-    -source.height/2
-  );
-
-  return output;
-}
-
-function sizeMatrixCanvas(
-  canvas,
-  maxWidthMm,
-  maxHeightMm
-){
-  const ratio=
-    canvas.width/
-    canvas.height;
-
-  let heightMm=
-    maxHeightMm;
-
-  let widthMm=
-    heightMm*ratio;
-
-  if(widthMm>maxWidthMm){
-    widthMm=
-      maxWidthMm;
-
-    heightMm=
-      widthMm/ratio;
-  }
-
-  canvas.style.width=
-    widthMm+'mm';
-
-  canvas.style.height=
-    heightMm+'mm';
-}
+/* ======================================
+   PRINT
+====================================== */
 
 function printLabels(){
   if(!lastGeneratedIds.length){
@@ -976,6 +970,11 @@ function printLabels(){
 
   window.print();
 }
+
+
+/* ======================================
+   SAVE EACH LABEL AS SEPARATE PNG
+====================================== */
 
 async function downloadLabelPngs(){
   try{
@@ -1004,6 +1003,7 @@ async function downloadLabelPngs(){
     let downloaded=0;
 
     for(const label of labels){
+
       const file=
         await buildLabelPng(
           label
@@ -1011,16 +1011,11 @@ async function downloadLabelPngs(){
 
       downloadBlob(
         file.blob,
-        file.plantId+
-        '.png'
+        file.plantId+'.png'
       );
 
       downloaded++;
 
-      /*
-      Small pause between downloads.
-      This helps with batches.
-      */
       await delay(
         250
       );
@@ -1049,9 +1044,15 @@ async function downloadLabelPngs(){
   }
 }
 
+
+/* ======================================
+   BUILD 300 DPI LABEL PNG
+====================================== */
+
 function buildLabelPng(label){
   return new Promise(
     (resolve,reject)=>{
+
       const plantId=
         label.dataset.plantId;
 
@@ -1073,6 +1074,7 @@ function buildLabelPng(label){
         return;
       }
 
+
       const widthMm=
         Number(
           document.getElementById(
@@ -1087,17 +1089,19 @@ function buildLabelPng(label){
           ).value
         )||40;
 
-      const maxMatrixHeight=
-        Number(
-          document.getElementById(
-            'matrixHeight'
-          ).value
-        )||30;
+      const matrixSizeMm=
+        Math.min(
+          Number(
+            document.getElementById(
+              'matrixSize'
+            ).value
+          )||11.5,
+          widthMm-2
+        );
+
 
       /*
-      300 DPI output.
-
-      300 pixels per inch / 25.4mm
+      300 DPI PNG output.
       */
       const pxPerMm=
         300/25.4;
@@ -1114,6 +1118,7 @@ function buildLabelPng(label){
           pxPerMm
         );
 
+
       const output=
         document.createElement(
           'canvas'
@@ -1125,15 +1130,18 @@ function buildLabelPng(label){
       output.height=
         heightPx;
 
+
       const ctx=
         output.getContext(
           '2d'
         );
 
-      ctx.imageSmoothingEnabled=false;
+      ctx.imageSmoothingEnabled=
+        false;
+
 
       /*
-      White tag background
+      White label background.
       */
       ctx.fillStyle=
         '#ffffff';
@@ -1145,50 +1153,13 @@ function buildLabelPng(label){
         heightPx
       );
 
+
       /*
-      Matrix dimensions.
-
-      Keep the Data Matrix proportional.
-      Never stretch it.
+      Draw square Data Matrix.
       */
-      const maxMatrixWidthMm=
-        Math.max(
-          6,
-          widthMm-2
-        );
-
-      const ratio=
-        matrixCanvas.width/
-        matrixCanvas.height;
-
-      let matrixHeightMm=
-        maxMatrixHeight;
-
-      let matrixWidthMm=
-        matrixHeightMm*
-        ratio;
-
-      if(
-        matrixWidthMm>
-        maxMatrixWidthMm
-      ){
-        matrixWidthMm=
-          maxMatrixWidthMm;
-
-        matrixHeightMm=
-          matrixWidthMm/
-          ratio;
-      }
-
-      const matrixWidthPx=
+      const matrixPx=
         Math.round(
-          matrixWidthMm*
-          pxPerMm
-        );
-
-      const matrixHeightPx=
-        Math.round(
-          matrixHeightMm*
+          matrixSizeMm*
           pxPerMm
         );
 
@@ -1196,18 +1167,16 @@ function buildLabelPng(label){
         Math.round(
           (
             widthPx-
-            matrixWidthPx
+            matrixPx
           )/2
         );
 
-      /*
-      Start roughly 1mm from top.
-      */
       const matrixY=
         Math.round(
-          1*
+          .8*
           pxPerMm
         );
+
 
       ctx.drawImage(
         matrixCanvas,
@@ -1215,17 +1184,17 @@ function buildLabelPng(label){
         0,
         matrixCanvas.width,
         matrixCanvas.height,
+
         matrixX,
         matrixY,
-        matrixWidthPx,
-        matrixHeightPx
+        matrixPx,
+        matrixPx
       );
 
-      /*
-      Human-readable ID.
 
-      Centred horizontally underneath
-      the rectangular matrix.
+      /*
+      Draw P-001 immediately
+      underneath the code.
       */
       ctx.fillStyle=
         '#000000';
@@ -1236,30 +1205,32 @@ function buildLabelPng(label){
       ctx.textBaseline=
         'middle';
 
-      /*
-      About 8pt equivalent at 300 DPI.
-      */
       ctx.font=
         'bold '+
         Math.round(
-          3*
+          2.8*
           pxPerMm
         )+
         'px Arial';
 
+
       const textY=
         Math.round(
           (
-            heightMm-3
+            .8+
+            matrixSizeMm+
+            3
           )*
           pxPerMm
         );
+
 
       ctx.fillText(
         plantId,
         widthPx/2,
         textY
       );
+
 
       output.toBlob(
         blob=>{
@@ -1283,6 +1254,7 @@ function buildLabelPng(label){
     }
   );
 }
+
 
 function downloadBlob(
   blob,
@@ -1318,6 +1290,7 @@ function downloadBlob(
   );
 }
 
+
 function delay(ms){
   return new Promise(
     resolve=>
@@ -1327,6 +1300,11 @@ function delay(ms){
       )
   );
 }
+
+
+/* ======================================
+   SAVE LABEL STATUS
+====================================== */
 
 function saveAndReturn(){
   if(!lastGeneratedIds.length){
@@ -1349,11 +1327,13 @@ function saveAndReturn(){
   );
 }
 
+
 function returnWithoutSaving(){
   window.location.replace(
     APP_URL
   );
 }
+
 
 function showMessage(message){
   const el=
