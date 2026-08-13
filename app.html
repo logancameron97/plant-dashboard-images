@@ -57,35 +57,42 @@ const params=
 const scan=
   params.get('scan');
 
-const action=
-  params.get('action');
-
 const labelsGenerated=
-  params.get('labelsGenerated');
+  params.get(
+    'labelsGenerated'
+  );
 
-let url=APPS_SCRIPT_URL;
+let url=
+  APPS_SCRIPT_URL;
 
 if(scan){
   url+=
     '&scan='+
-    encodeURIComponent(scan);
-}
-
-if(action){
-  url+=
-    '&action='+
-    encodeURIComponent(action);
+    encodeURIComponent(
+      scan
+    );
 }
 
 if(labelsGenerated){
   url+=
     '&labelsGenerated='+
-    encodeURIComponent(labelsGenerated);
+    encodeURIComponent(
+      labelsGenerated
+    );
 }
 
-document.getElementById('app').src=url;
+document.getElementById(
+  'app'
+).src=url;
 
-if(scan||action||labelsGenerated){
+/*
+Remove temporary actions from the outer
+Home Screen URL after passing them into Apps Script.
+*/
+if(
+  scan||
+  labelsGenerated
+){
   history.replaceState(
     {},
     '',
