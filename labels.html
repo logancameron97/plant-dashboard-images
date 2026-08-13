@@ -427,7 +427,7 @@ button{
         <input
           id="matrixHeight"
           type="number"
-          value="30"
+          value="27"
           min="15"
           max="33"
           step=".5"
@@ -808,14 +808,14 @@ function generateLabels(){
 
     try{
       bwipjs.toCanvas(
-        rawCanvas,
-        {
-          bcid:'datamatrixrectangular',
-          text:id,
-          scale:12,
-          padding:2
-        }
-      );
+  rawCanvas,
+  {
+    bcid:'datamatrixrectangular',
+    text:id,
+    scale:16,
+    padding:4
+  }
+);
 
     }catch(error){
       console.error(
