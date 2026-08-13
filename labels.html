@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
 <meta
   name="viewport"
   content="width=device-width,initial-scale=1,viewport-fit=cover"
@@ -233,7 +234,10 @@ button{
   text-align:center;
 }
 
-/* 14 mm × 40 mm physical plant tag */
+
+/* ======================================
+   PHYSICAL TAG
+====================================== */
 
 #labels{
   display:grid;
@@ -256,7 +260,10 @@ button{
   outline:1px solid #ddd;
 }
 
-/* Square Data Matrix */
+
+/* ======================================
+   QR CODE
+====================================== */
 
 .matrix-area{
   width:12.6mm;
@@ -272,7 +279,10 @@ button{
   image-rendering:pixelated;
 }
 
-/* P-001 text */
+
+/* ======================================
+   PLANT ID
+====================================== */
 
 .label-id{
   width:100%;
@@ -291,6 +301,11 @@ button{
 .label-spacer{
   flex:1;
 }
+
+
+/* ======================================
+   PRINT
+====================================== */
 
 @media print{
   @page{
@@ -317,6 +332,7 @@ button{
   .label{
     outline:none;
     break-inside:avoid;
+    page-break-inside:avoid;
   }
 }
 
@@ -336,7 +352,7 @@ button{
   <h1>🏷️ Plant Labels</h1>
 
   <div class="description">
-    New plants are included automatically. Existing labels can be selected below if you need to print a replacement.
+    New plants are included automatically. Existing labels can also be selected if you need a replacement.
   </div>
 
   <div class="section">
@@ -418,7 +434,7 @@ button{
       </div>
 
       <div class="setting">
-        <label>Matrix size (mm)</label>
+        <label>QR size (mm)</label>
 
         <input
           id="matrixSize"
@@ -485,7 +501,7 @@ button{
   id="previewTitle"
   style="display:none"
 >
-  Preview — PNG output is optimised for 203 DPI
+  QR label preview
 </div>
 
 <div id="labels"></div>
@@ -671,14 +687,15 @@ function getSelectedIds(){
   ];
 }
 
-/* ==================================
-   GENERATE
-================================== */
+
+/* ======================================
+   GENERATE QR LABELS
+====================================== */
 
 function generateLabels(){
   if(typeof bwipjs==='undefined'){
     alert(
-      'Data Matrix generator failed to load.'
+      'QR generator failed to load.'
     );
 
     return;
@@ -709,7 +726,7 @@ function generateLabels(){
       ).value
     )||40;
 
-  const matrixSize=
+  const qrSize=
     Math.min(
       Number(
         document.getElementById(
@@ -766,10 +783,26 @@ function generateLabels(){
       bwipjs.toCanvas(
         canvas,
         {
-          bcid:'datamatrix',
+          bcid:'qrcode',
           text:id,
+
+          /*
+          Lowest practical QR error correction
+          keeps P-001 extremely simple and gives
+          us larger modules.
+          */
+          eclevel:'L',
+
+          /*
+          High quality source.
+          */
           scale:20,
-          padding:3,
+
+          /*
+          QR quiet zone.
+          */
+          padding:4,
+
           backgroundcolor:'FFFFFF'
         }
       );
@@ -784,10 +817,10 @@ function generateLabels(){
     }
 
     canvas.style.width=
-      matrixSize+'mm';
+      qrSize+'mm';
 
     canvas.style.height=
-      matrixSize+'mm';
+      qrSize+'mm';
 
     matrixArea.appendChild(
       canvas
@@ -848,9 +881,10 @@ function generateLabels(){
   );
 }
 
-/* ==================================
+
+/* ======================================
    PRINT
-================================== */
+====================================== */
 
 function printLabels(){
   if(!lastGeneratedIds.length){
@@ -864,9 +898,10 @@ function printLabels(){
   window.print();
 }
 
-/* ==================================
-   PNG DOWNLOAD
-================================== */
+
+/* ======================================
+   SAVE PNGS
+====================================== */
 
 async function downloadLabelPngs(){
   if(!lastGeneratedIds.length){
@@ -951,7 +986,7 @@ function buildLabelPng(label){
           ).value
         )||40;
 
-      const matrixMm=
+      const qrMm=
         Math.min(
           Number(
             document.getElementById(
@@ -961,12 +996,6 @@ function buildLabelPng(label){
           widthMm-2
         );
 
-      /*
-      Render to the native approximate
-      dot density of the P21 instead of
-      generating 300-DPI artwork that
-      must then be resampled.
-      */
       const pxPerMm=
         PRINTER_DPI/25.4;
 
@@ -1010,9 +1039,9 @@ function buildLabelPng(label){
         heightPx
       );
 
-      const matrixPx=
+      const qrPx=
         Math.round(
-          matrixMm*
+          qrMm*
           pxPerMm
         );
 
@@ -1020,13 +1049,13 @@ function buildLabelPng(label){
         Math.round(
           (
             widthPx-
-            matrixPx
+            qrPx
           )/2
         );
 
       const y=
         Math.round(
-          .8*
+          .7*
           pxPerMm
         );
 
@@ -1038,8 +1067,8 @@ function buildLabelPng(label){
         source.height,
         x,
         y,
-        matrixPx,
-        matrixPx
+        qrPx,
+        qrPx
       );
 
       ctx.fillStyle='#000';
@@ -1057,8 +1086,8 @@ function buildLabelPng(label){
       const textY=
         Math.round(
           (
-            .8+
-            matrixMm+
+            .7+
+            qrMm+
             3
           )*
           pxPerMm
@@ -1137,9 +1166,10 @@ function delay(ms){
   );
 }
 
-/* ==================================
-   SAVE STATUS
-================================== */
+
+/* ======================================
+   SAVE LABEL STATUS
+====================================== */
 
 function saveAndReturn(){
   if(!lastGeneratedIds.length){
