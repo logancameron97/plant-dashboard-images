@@ -46,7 +46,6 @@ body{
 
 body{
   min-height:100dvh;
-
   padding:
     max(16px,env(safe-area-inset-top))
     16px
@@ -86,15 +85,7 @@ h1{
   box-shadow:0 10px 30px rgba(50,75,62,.1);
 }
 
-
-/* ==================================
-   CAMERA
-
-   No fixed height here.
-   Let the video determine its natural
-   aspect ratio so we don't leave a
-   large unused black section.
-================================== */
+/* CAMERA */
 
 #reader{
   width:100%;
@@ -108,17 +99,14 @@ h1{
   width:100%!important;
   height:auto!important;
   max-height:none!important;
-  object-fit:contain!important;
+  object-fit:cover!important;
 }
 
 #reader img{
   display:none!important;
 }
 
-
-/* ==================================
-   STATUS
-================================== */
+/* STATUS */
 
 .status{
   min-height:42px;
@@ -143,10 +131,7 @@ h1{
   color:var(--red);
 }
 
-
-/* ==================================
-   MANUAL FALLBACK
-================================== */
+/* MANUAL FALLBACK */
 
 .manual{
   margin-top:12px;
@@ -191,10 +176,7 @@ button{
   font-weight:700;
 }
 
-
-/* ==================================
-   BUTTONS
-================================== */
+/* BUTTONS */
 
 .bottom-actions{
   display:flex;
@@ -246,7 +228,7 @@ button{
     </h1>
 
     <div class="subtitle">
-      Scan the plant tag, then choose what you did.
+      Place the square Data Matrix inside the scan box.
     </div>
 
   </div>
@@ -315,7 +297,7 @@ button{
   </div>
 
   <div class="tip">
-    The entire camera image is active. Hold the square Data Matrix steady and allow the camera to focus.
+    Hold the tag steady inside the square and let the camera focus.
   </div>
 
 </div>
@@ -354,10 +336,7 @@ document.addEventListener(
   }
 );
 
-
-/* ==================================
-   START CAMERA
-================================== */
+/* START CAMERA */
 
 async function startScanner(){
   if(
@@ -407,18 +386,30 @@ async function startScanner(){
         }
       );
 
-    /*
-    No qrbox.
-
-    The complete video frame is used
-    for detection.
-    */
     await scanner.start(
       {
         facingMode:'environment'
       },
       {
-        fps:15,
+        fps:20,
+
+        qrbox:(width,height)=>{
+          const size=
+            Math.floor(
+              Math.min(
+                width*.65,
+                height*.65,
+                260
+              )
+            );
+
+          return{
+            width:size,
+            height:size
+          };
+        },
+
+        aspectRatio:4/3,
         disableFlip:true
       },
       handleScanSuccess,
@@ -429,7 +420,7 @@ async function startScanner(){
     startingScanner=false;
 
     setStatus(
-      'Camera ready — scan a plant tag.'
+      'Camera ready — place the code inside the square.'
     );
 
   }catch(error){
@@ -450,10 +441,7 @@ async function startScanner(){
   }
 }
 
-
-/* ==================================
-   SUCCESS
-================================== */
+/* SUCCESS */
 
 function handleScanSuccess(
   decodedText
@@ -476,10 +464,7 @@ function handleScanSuccess(
   );
 }
 
-
-/* ==================================
-   MANUAL ENTRY
-================================== */
+/* MANUAL ENTRY */
 
 function submitManualId(){
   const plantId=
@@ -503,17 +488,7 @@ function submitManualId(){
   );
 }
 
-
-/* ==================================
-   FINISH
-
-   IMPORTANT:
-   No watering/repotting is performed
-   here.
-
-   Only the plant ID is returned to the
-   dashboard.
-================================== */
+/* FINISH */
 
 async function finishScan(
   plantId
@@ -535,9 +510,9 @@ async function finishScan(
       scannerRunning
     ){
       await scanner.stop();
+
       scannerRunning=false;
     }
-
   }catch(error){}
 
   setTimeout(
@@ -554,12 +529,11 @@ async function finishScan(
   );
 }
 
+/* NORMALIZE */
 
-/* ==================================
-   NORMALISE ID
-================================== */
-
-function normalizePlantId(value){
+function normalizePlantId(
+  value
+){
   const match=
     String(value||'')
       .trim()
@@ -573,10 +547,7 @@ function normalizePlantId(value){
     :'';
 }
 
-
-/* ==================================
-   CANCEL
-================================== */
+/* CANCEL */
 
 async function returnToDashboard(){
   try{
@@ -593,10 +564,7 @@ async function returnToDashboard(){
   );
 }
 
-
-/* ==================================
-   HELPERS
-================================== */
+/* HELPERS */
 
 function setStatus(
   message,
@@ -619,7 +587,9 @@ function setStatus(
     );
 }
 
-function getErrorMessage(error){
+function getErrorMessage(
+  error
+){
   if(!error){
     return 'Unknown camera error.';
   }
