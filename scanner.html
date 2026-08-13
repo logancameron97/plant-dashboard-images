@@ -85,28 +85,43 @@ h1{
   box-shadow:0 10px 30px rgba(50,75,62,.1);
 }
 
-/* CAMERA */
-
-#reader{
+.camera-wrap{
+  position:relative;
   width:100%;
   overflow:hidden;
   background:#000;
   border-radius:15px;
 }
 
-#reader video{
-  display:block!important;
-  width:100%!important;
-  height:auto!important;
-  max-height:none!important;
-  object-fit:cover!important;
+#video{
+  display:block;
+  width:100%;
+  height:auto;
+  background:#000;
 }
 
-#reader img{
-  display:none!important;
+.guide{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:64%;
+  aspect-ratio:1/1;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+  border:2px solid rgba(255,255,255,.9);
+  border-radius:16px;
+  box-shadow:
+    0 0 0 9999px rgba(0,0,0,.12),
+    0 0 0 3px rgba(0,0,0,.15);
 }
 
-/* STATUS */
+.guide::before,
+.guide::after{
+  content:'';
+  position:absolute;
+  inset:12px;
+  border-radius:10px;
+}
 
 .status{
   min-height:42px;
@@ -130,8 +145,6 @@ h1{
   background:var(--red-soft);
   color:var(--red);
 }
-
-/* MANUAL FALLBACK */
 
 .manual{
   margin-top:12px;
@@ -176,8 +189,6 @@ button{
   font-weight:700;
 }
 
-/* BUTTONS */
-
 .bottom-actions{
   display:flex;
   gap:8px;
@@ -218,24 +229,26 @@ button{
 <div class="wrapper">
 
   <div class="header">
+    <div class="icon">🌿</div>
 
-    <div class="icon">
-      🌿
-    </div>
-
-    <h1>
-      Scan Plant
-    </h1>
+    <h1>Scan Plant</h1>
 
     <div class="subtitle">
-      Place the square Data Matrix inside the scan box.
+      Point the camera at the square Data Matrix.
     </div>
-
   </div>
 
   <div class="scanner-card">
 
-    <div id="reader"></div>
+    <div class="camera-wrap">
+      <video
+        id="video"
+        playsinline
+        muted
+      ></video>
+
+      <div class="guide"></div>
+    </div>
 
     <div
       class="status"
@@ -297,29 +310,27 @@ button{
   </div>
 
   <div class="tip">
-    Hold the tag steady inside the square and let the camera focus.
+    You do not need to perfectly fill the square. Hold the tag reasonably steady and let the camera focus.
   </div>
 
 </div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.23.0/umd/index.min.js"></script>
 
 <script>
 const APP_URL=
   'https://logancameron97.github.io/plant-dashboard-images/app.html';
 
-let scanner=null;
-let scannerRunning=false;
-let startingScanner=false;
+let codeReader=null;
+let controls=null;
 let scanComplete=false;
+let startingScanner=false;
 
 document.addEventListener(
   'DOMContentLoaded',
   ()=>{
     document
-      .getElementById(
-        'manualId'
-      )
+      .getElementById('manualId')
       .addEventListener(
         'keydown',
         event=>{
@@ -336,11 +347,8 @@ document.addEventListener(
   }
 );
 
-/* START CAMERA */
-
 async function startScanner(){
   if(
-    scannerRunning||
     startingScanner||
     scanComplete
   ){
@@ -358,75 +366,95 @@ async function startScanner(){
   );
 
   try{
+    stopScanner();
+
     if(
-      typeof Html5Qrcode==='undefined'
+      typeof ZXing==='undefined'
     ){
       throw new Error(
-        'Scanner library did not load.'
+        'ZXing scanner library did not load.'
       );
     }
 
-    if(scanner){
-      try{
-        await scanner.clear();
-      }catch(error){}
+    const hints=
+      new Map();
 
-      scanner=null;
-    }
-
-    scanner=
-      new Html5Qrcode(
-        'reader',
-        {
-          formatsToSupport:[
-            Html5QrcodeSupportedFormats.DATA_MATRIX,
-            Html5QrcodeSupportedFormats.QR_CODE
-          ],
-          verbose:false
-        }
-      );
-
-    await scanner.start(
-      {
-        facingMode:'environment'
-      },
-      {
-        fps:20,
-
-        qrbox:(width,height)=>{
-          const size=
-            Math.floor(
-              Math.min(
-                width*.65,
-                height*.65,
-                260
-              )
-            );
-
-          return{
-            width:size,
-            height:size
-          };
-        },
-
-        aspectRatio:4/3,
-        disableFlip:true
-      },
-      handleScanSuccess,
-      ()=>{}
+    hints.set(
+      ZXing.DecodeHintType.POSSIBLE_FORMATS,
+      [
+        ZXing.BarcodeFormat.DATA_MATRIX
+      ]
     );
 
-    scannerRunning=true;
-    startingScanner=false;
+    hints.set(
+      ZXing.DecodeHintType.TRY_HARDER,
+      true
+    );
+
+    codeReader=
+      new ZXing.BrowserMultiFormatReader(
+        hints,
+        60
+      );
+
+    const devices=
+      await ZXing.BrowserCodeReader
+        .listVideoInputDevices();
+
+    let selectedDeviceId='';
+
+    if(devices.length){
+      const rear=
+        devices.find(
+          device=>
+            /back|rear|environment/i.test(
+              device.label||''
+            )
+        );
+
+      selectedDeviceId=
+        rear
+          ?rear.deviceId
+          :devices[
+              devices.length-1
+            ].deviceId;
+    }
 
     setStatus(
-      'Camera ready — place the code inside the square.'
+      'Camera ready — scan a plant tag.'
     );
+
+    startingScanner=false;
+
+    controls=
+      await codeReader.decodeFromVideoDevice(
+        selectedDeviceId||undefined,
+        'video',
+        (result,error)=>{
+          if(
+            scanComplete
+          ){
+            return;
+          }
+
+          if(result){
+            const plantId=
+              normalizePlantId(
+                result.getText()
+              );
+
+            if(plantId){
+              finishScan(
+                plantId
+              );
+            }
+          }
+        }
+      );
 
   }catch(error){
     console.error(error);
 
-    scannerRunning=false;
     startingScanner=false;
 
     setStatus(
@@ -440,31 +468,6 @@ async function startScanner(){
     ).style.display='block';
   }
 }
-
-/* SUCCESS */
-
-function handleScanSuccess(
-  decodedText
-){
-  if(scanComplete){
-    return;
-  }
-
-  const plantId=
-    normalizePlantId(
-      decodedText
-    );
-
-  if(!plantId){
-    return;
-  }
-
-  finishScan(
-    plantId
-  );
-}
-
-/* MANUAL ENTRY */
 
 function submitManualId(){
   const plantId=
@@ -488,9 +491,7 @@ function submitManualId(){
   );
 }
 
-/* FINISH */
-
-async function finishScan(
+function finishScan(
   plantId
 ){
   if(scanComplete){
@@ -504,16 +505,7 @@ async function finishScan(
     'success'
   );
 
-  try{
-    if(
-      scanner&&
-      scannerRunning
-    ){
-      await scanner.stop();
-
-      scannerRunning=false;
-    }
-  }catch(error){}
+  stopScanner();
 
   setTimeout(
     ()=>{
@@ -528,8 +520,6 @@ async function finishScan(
     250
   );
 }
-
-/* NORMALIZE */
 
 function normalizePlantId(
   value
@@ -547,24 +537,48 @@ function normalizePlantId(
     :'';
 }
 
-/* CANCEL */
-
-async function returnToDashboard(){
+function stopScanner(){
   try{
-    if(
-      scanner&&
-      scannerRunning
-    ){
-      await scanner.stop();
+    if(controls){
+      controls.stop();
     }
   }catch(error){}
+
+  try{
+    if(codeReader){
+      codeReader.reset();
+    }
+  }catch(error){}
+
+  controls=null;
+  codeReader=null;
+
+  const video=
+    document.getElementById(
+      'video'
+    );
+
+  if(
+    video&&
+    video.srcObject
+  ){
+    video.srcObject
+      .getTracks()
+      .forEach(
+        track=>track.stop()
+      );
+
+    video.srcObject=null;
+  }
+}
+
+function returnToDashboard(){
+  stopScanner();
 
   window.location.replace(
     APP_URL
   );
 }
-
-/* HELPERS */
 
 function setStatus(
   message,
@@ -587,9 +601,7 @@ function setStatus(
     );
 }
 
-function getErrorMessage(
-  error
-){
+function getErrorMessage(error){
   if(!error){
     return 'Unknown camera error.';
   }
@@ -604,6 +616,11 @@ function getErrorMessage(
     String(error)
   );
 }
+
+window.addEventListener(
+  'pagehide',
+  stopScanner
+);
 </script>
 
 </body>
