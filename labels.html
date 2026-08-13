@@ -5,7 +5,7 @@
 
 <meta
   name="viewport"
-  content="width=device-width,initial-scale=1"
+  content="width=device-width,initial-scale=1,viewport-fit=cover"
 >
 
 <title>Plant Labels</title>
@@ -18,6 +18,9 @@
   --muted:#74877d;
   --border:#dbe7df;
   --green:#6fa982;
+  --green-soft:#e9f5ed;
+  --blue:#79a9cf;
+  --soft:#f6faf7;
 }
 
 *{
@@ -26,19 +29,21 @@
 
 body{
   margin:0;
-  padding:20px;
+  padding:18px;
   background:var(--bg);
   color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 
 .controls{
+  width:100%;
   max-width:700px;
   margin:0 auto 22px;
   padding:18px;
   background:#fff;
   border:1px solid var(--border);
-  border-radius:16px;
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(50,75,62,.08);
 }
 
 h1{
@@ -47,34 +52,112 @@ h1{
 }
 
 .description{
-  margin-bottom:14px;
+  margin-bottom:18px;
   color:var(--muted);
-  font-size:.84rem;
+  font-size:.83rem;
+  line-height:1.45;
 }
 
-textarea{
-  width:100%;
-  height:110px;
+.section{
+  margin-top:17px;
+  padding-top:16px;
+  border-top:1px solid var(--border);
+}
+
+.section-title{
+  margin-bottom:8px;
+  font-size:.8rem;
+  font-weight:750;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+
+.count{
+  color:var(--muted);
+  font-weight:500;
+}
+
+.empty{
+  padding:10px 12px;
+  background:var(--soft);
+  color:var(--muted);
+  border-radius:10px;
+  font-size:.8rem;
+}
+
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+
+.chip{
+  padding:6px 9px;
+  background:var(--green-soft);
+  color:#4f7860;
+  border-radius:9px;
+  font-size:.76rem;
+  font-weight:700;
+}
+
+.remake-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:#e8f0f7;
+  color:#55758f;
+}
+
+.remove{
+  border:0;
+  padding:0;
+  background:transparent;
+  color:inherit;
+  font-size:.9rem;
+  cursor:pointer;
+}
+
+.old-row{
+  display:flex;
+  gap:8px;
+}
+
+select{
+  flex:1;
+  min-width:0;
   padding:10px;
   border:1px solid var(--border);
   border-radius:9px;
-  resize:vertical;
-  font-family:monospace;
-  font-size:.85rem;
+  background:var(--soft);
+  color:var(--text);
+  font-size:.9rem;
+}
+
+button{
+  border:0;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+
+.add-old{
+  padding:10px 13px;
+  border-radius:9px;
+  background:var(--blue);
+  color:#fff;
+  font-weight:700;
 }
 
 .settings{
   display:grid;
   grid-template-columns:repeat(3,1fr);
   gap:8px;
-  margin-top:10px;
 }
 
 .setting label{
   display:block;
   margin-bottom:4px;
   color:var(--muted);
-  font-size:.7rem;
+  font-size:.69rem;
 }
 
 .setting input{
@@ -85,18 +168,17 @@ textarea{
 }
 
 .buttons{
-  display:flex;
+  display:grid;
+  grid-template-columns:1fr 1fr;
   gap:8px;
-  margin-top:12px;
+  margin-top:17px;
 }
 
-button{
-  flex:1;
+.buttons button{
   padding:11px;
-  border:0;
-  border-radius:9px;
+  border-radius:10px;
+  font-size:.82rem;
   font-weight:700;
-  cursor:pointer;
 }
 
 .generate{
@@ -105,7 +187,12 @@ button{
 }
 
 .print{
-  background:#6fa982;
+  background:var(--green);
+  color:#fff;
+}
+
+.done{
+  background:#5f8e75;
   color:#fff;
 }
 
@@ -113,6 +200,21 @@ button{
   background:#dfe8e2;
   color:var(--text);
 }
+
+.message{
+  display:none;
+  margin-top:12px;
+  padding:10px;
+  border-radius:10px;
+  background:var(--green-soft);
+  color:#4f7860;
+  font-size:.8rem;
+  text-align:center;
+}
+
+/*
+14mm wide × 40mm high physical tag.
+*/
 
 #labels{
   display:grid;
@@ -123,37 +225,56 @@ button{
 
 .label{
   width:14mm;
-  height:18mm;
+  height:40mm;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
+  padding:.8mm .7mm;
   overflow:hidden;
   background:#fff;
+  color:#000;
 }
 
-.label canvas{
+.matrix-area{
+  width:12.4mm;
+  height:32.2mm;
+  flex:0 0 32.2mm;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.matrix-area canvas{
   display:block;
-  width:10.5mm!important;
-  height:10.5mm!important;
   image-rendering:pixelated;
 }
 
-.id{
-  margin-top:.8mm;
+.label-id{
+  width:100%;
+  height:5mm;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-top:.4mm;
   color:#000;
   font-family:Arial,sans-serif;
-  font-size:6pt;
-  font-weight:700;
+  font-size:8pt;
+  font-weight:800;
   line-height:1;
+  letter-spacing:.1mm;
+  white-space:nowrap;
+  text-align:center;
 }
 
 @media print{
   @page{
-    margin:5mm;
+    margin:4mm;
   }
 
   body{
+    margin:0;
     padding:0;
     background:#fff;
   }
@@ -163,7 +284,9 @@ button{
   }
 
   #labels{
+    grid-template-columns:repeat(auto-fill,14mm);
     justify-content:start;
+    gap:1mm;
   }
 
   .label{
@@ -178,7 +301,7 @@ button{
   }
 
   .buttons{
-    flex-direction:column;
+    grid-template-columns:1fr;
   }
 }
 </style>
@@ -191,44 +314,98 @@ button{
   <h1>🏷️ Plant Labels</h1>
 
   <div class="description">
-    Generates compact Data Matrix labels. Print at 100% / Actual Size.
+    New plants without a recorded label are included automatically.
+    You can also add an existing plant if you need to replace a damaged label.
   </div>
 
-  <textarea id="ids"></textarea>
+  <div class="section">
 
-  <div class="settings">
-
-    <div class="setting">
-      <label>Label width (mm)</label>
-      <input
-        id="labelWidth"
-        type="number"
-        value="14"
-        min="8"
-        step=".5"
-      >
+    <div class="section-title">
+      New labels
+      <span class="count" id="newCount"></span>
     </div>
 
-    <div class="setting">
-      <label>Label height (mm)</label>
-      <input
-        id="labelHeight"
-        type="number"
-        value="18"
-        min="10"
-        step=".5"
-      >
+    <div id="newPlants"></div>
+
+  </div>
+
+  <div class="section">
+
+    <div class="section-title">
+      Remake existing label
     </div>
 
-    <div class="setting">
-      <label>Code size (mm)</label>
-      <input
-        id="codeSize"
-        type="number"
-        value="10.5"
-        min="6"
-        step=".5"
+    <div class="old-row">
+
+      <select id="oldPlantSelect">
+        <option value="">
+          Select old plant…
+        </option>
+      </select>
+
+      <button
+        class="add-old"
+        type="button"
+        onclick="addOldPlant()"
       >
+        Add
+      </button>
+
+    </div>
+
+    <div
+      class="chips"
+      id="remakePlants"
+      style="margin-top:9px"
+    ></div>
+
+  </div>
+
+  <div class="section">
+
+    <div class="section-title">
+      Physical dimensions
+    </div>
+
+    <div class="settings">
+
+      <div class="setting">
+        <label>Tag width (mm)</label>
+
+        <input
+          id="labelWidth"
+          type="number"
+          value="14"
+          min="10"
+          step=".5"
+        >
+      </div>
+
+      <div class="setting">
+        <label>Tag height (mm)</label>
+
+        <input
+          id="labelHeight"
+          type="number"
+          value="40"
+          min="20"
+          step=".5"
+        >
+      </div>
+
+      <div class="setting">
+        <label>Matrix max height (mm)</label>
+
+        <input
+          id="matrixHeight"
+          type="number"
+          value="30"
+          min="15"
+          max="33"
+          step=".5"
+        >
+      </div>
+
     </div>
 
   </div>
@@ -237,26 +414,42 @@ button{
 
     <button
       class="generate"
+      type="button"
       onclick="generateLabels()"
     >
-      Generate
+      Generate Labels
     </button>
 
     <button
       class="print"
-      onclick="window.print()"
+      type="button"
+      onclick="printLabels()"
     >
       Print
     </button>
 
     <button
-      class="back"
-      onclick="window.location.href='app.html'"
+      class="done"
+      type="button"
+      onclick="saveAndReturn()"
     >
-      Back
+      Save as Generated & Return
+    </button>
+
+    <button
+      class="back"
+      type="button"
+      onclick="returnWithoutSaving()"
+    >
+      Back Without Saving
     </button>
 
   </div>
+
+  <div
+    class="message"
+    id="message"
+  ></div>
 
 </div>
 
@@ -265,77 +458,219 @@ button{
 <script src="https://unpkg.com/bwip-js/dist/bwip-js-min.js"></script>
 
 <script>
+const APP_URL=
+  'https://logancameron97.github.io/plant-dashboard-images/app.html';
+
+let newIds=[];
+let oldIds=[];
+let remakeIds=[];
+let lastGeneratedIds=[];
+
 document.addEventListener(
   'DOMContentLoaded',
-  ()=>{
-    const params=
-      new URLSearchParams(
-        window.location.search
-      );
-
-    const ids=
-      params.get('ids')||'';
-
-    document.getElementById(
-      'ids'
-    ).value=
-      ids
-        .split(',')
-        .filter(Boolean)
-        .join('\n');
-
-    generateLabels();
-  }
+  initLabels
 );
 
-function getIds(){
-  const text=
-    document.getElementById(
-      'ids'
-    ).value;
+function initLabels(){
+  const params=
+    new URLSearchParams(
+      window.location.search
+    );
 
+  newIds=
+    parseIds(
+      params.get('new')
+    );
+
+  oldIds=
+    parseIds(
+      params.get('old')
+    );
+
+  renderNewPlants();
+  renderOldSelect();
+  renderRemakes();
+}
+
+function parseIds(value){
   const matches=
-    text
+    String(value||'')
       .toUpperCase()
-      .match(/P-\d{3,}/g)||
-      [];
+      .match(/P-\d{3,}/g)||[];
 
   return [
     ...new Set(matches)
   ];
 }
 
+function renderNewPlants(){
+  const container=
+    document.getElementById(
+      'newPlants'
+    );
+
+  document.getElementById(
+    'newCount'
+  ).textContent=
+    '('+newIds.length+')';
+
+  if(!newIds.length){
+    container.innerHTML=
+      '<div class="empty">'+
+      'All current plants already have a generated label.'+
+      '</div>';
+
+    return;
+  }
+
+  container.innerHTML=
+    '<div class="chips">'+
+    newIds.map(
+      id=>
+        '<span class="chip">'+
+        id+
+        '</span>'
+    ).join('')+
+    '</div>';
+}
+
+function renderOldSelect(){
+  const select=
+    document.getElementById(
+      'oldPlantSelect'
+    );
+
+  const available=
+    oldIds.filter(
+      id=>!remakeIds.includes(id)
+    );
+
+  select.innerHTML=
+    '<option value="">Select old plant…</option>'+
+    available.map(
+      id=>
+        '<option value="'+id+'">'+
+        id+
+        '</option>'
+    ).join('');
+}
+
+function addOldPlant(){
+  const select=
+    document.getElementById(
+      'oldPlantSelect'
+    );
+
+  const id=select.value;
+
+  if(!id)return;
+
+  if(!remakeIds.includes(id)){
+    remakeIds.push(id);
+  }
+
+  renderRemakes();
+  renderOldSelect();
+}
+
+function removeRemake(id){
+  remakeIds=
+    remakeIds.filter(
+      item=>item!==id
+    );
+
+  renderRemakes();
+  renderOldSelect();
+}
+
+function renderRemakes(){
+  const container=
+    document.getElementById(
+      'remakePlants'
+    );
+
+  if(!remakeIds.length){
+    container.innerHTML='';
+    return;
+  }
+
+  container.innerHTML=
+    remakeIds.map(
+      id=>
+        '<span class="chip remake-chip">'+
+        id+
+        '<button '+
+        'class="remove" '+
+        'type="button" '+
+        'onclick="removeRemake(\''+
+        id+
+        '\')">'+
+        '×'+
+        '</button>'+
+        '</span>'
+    ).join('');
+}
+
+function getSelectedIds(){
+  return [
+    ...new Set(
+      [
+        ...newIds,
+        ...remakeIds
+      ]
+    )
+  ];
+}
+
 function generateLabels(){
   if(typeof bwipjs==='undefined'){
     alert(
-      'Barcode generator failed to load.'
+      'Data Matrix generator failed to load.'
     );
 
     return;
   }
 
-  const ids=getIds();
+  const ids=
+    getSelectedIds();
 
-  const width=
+  if(!ids.length){
+    alert(
+      'There are no new labels. Add an old plant above if you want to remake one.'
+    );
+
+    return;
+  }
+
+  const labelWidth=
     Number(
       document.getElementById(
         'labelWidth'
       ).value
     )||14;
 
-  const height=
+  const labelHeight=
     Number(
       document.getElementById(
         'labelHeight'
       ).value
-    )||18;
+    )||40;
 
-  const codeSize=
+  const maxMatrixHeight=
     Number(
       document.getElementById(
-        'codeSize'
+        'matrixHeight'
       ).value
-    )||12;
+    )||30;
+
+  /*
+  Leave roughly 1mm margin on each side.
+  */
+  const maxMatrixWidth=
+    Math.max(
+      6,
+      labelWidth-2
+    );
 
   const container=
     document.getElementById(
@@ -346,7 +681,7 @@ function generateLabels(){
 
   container.style.gridTemplateColumns=
     'repeat(auto-fill,'+
-    width+
+    labelWidth+
     'mm)';
 
   ids.forEach(id=>{
@@ -355,28 +690,35 @@ function generateLabels(){
         'div'
       );
 
-    label.className=
-      'label';
+    label.className='label';
 
     label.style.width=
-      width+'mm';
+      labelWidth+'mm';
 
     label.style.height=
-      height+'mm';
+      labelHeight+'mm';
 
-    const canvas=
+    const matrixArea=
+      document.createElement(
+        'div'
+      );
+
+    matrixArea.className=
+      'matrix-area';
+
+    const rawCanvas=
       document.createElement(
         'canvas'
       );
 
     try{
       bwipjs.toCanvas(
-        canvas,
+        rawCanvas,
         {
           bcid:'datamatrixrectangular',
           text:id,
-          scale:8,
-          padding:1
+          scale:10,
+          padding:2
         }
       );
 
@@ -389,32 +731,188 @@ function generateLabels(){
       return;
     }
 
-    canvas.style.width=
-      codeSize+'mm';
+    const verticalCanvas=
+      makeVerticalCanvas(
+        rawCanvas
+      );
 
-    canvas.style.height=
-      codeSize+'mm';
+    sizeMatrixCanvas(
+      verticalCanvas,
+      maxMatrixWidth,
+      maxMatrixHeight
+    );
 
-    const text=
+    matrixArea.appendChild(
+      verticalCanvas
+    );
+
+    const idText=
       document.createElement(
         'div'
       );
 
-    text.className='id';
-    text.textContent=id;
+    idText.className=
+      'label-id';
+
+    idText.textContent=id;
 
     label.appendChild(
-      canvas
+      matrixArea
     );
 
     label.appendChild(
-      text
+      idText
     );
 
     container.appendChild(
       label
     );
   });
+
+  lastGeneratedIds=[
+    ...ids
+  ];
+
+  showMessage(
+    ids.length+
+    (
+      ids.length===1
+        ?' label generated.'
+        :' labels generated.'
+    )+
+    ' Print at 100% / Actual Size.'
+  );
+}
+
+/*
+Rectangular Data Matrix symbols are normally
+generated horizontally.
+
+This rotates the bitmap by 90 degrees without
+stretching or altering any barcode modules.
+*/
+function makeVerticalCanvas(source){
+  if(source.height>=source.width){
+    return source;
+  }
+
+  const output=
+    document.createElement(
+      'canvas'
+    );
+
+  output.width=
+    source.height;
+
+  output.height=
+    source.width;
+
+  const ctx=
+    output.getContext(
+      '2d'
+    );
+
+  ctx.translate(
+    output.width/2,
+    output.height/2
+  );
+
+  ctx.rotate(
+    Math.PI/2
+  );
+
+  ctx.drawImage(
+    source,
+    -source.width/2,
+    -source.height/2
+  );
+
+  return output;
+}
+
+/*
+Scale the entire symbol proportionally so it fits
+inside the physical mm bounding box.
+
+It is never stretched.
+*/
+function sizeMatrixCanvas(
+  canvas,
+  maxWidthMm,
+  maxHeightMm
+){
+  const ratio=
+    canvas.width/
+    canvas.height;
+
+  let heightMm=
+    maxHeightMm;
+
+  let widthMm=
+    heightMm*ratio;
+
+  if(widthMm>maxWidthMm){
+    widthMm=
+      maxWidthMm;
+
+    heightMm=
+      widthMm/ratio;
+  }
+
+  canvas.style.width=
+    widthMm+'mm';
+
+  canvas.style.height=
+    heightMm+'mm';
+}
+
+function printLabels(){
+  if(!lastGeneratedIds.length){
+    generateLabels();
+
+    if(!lastGeneratedIds.length){
+      return;
+    }
+  }
+
+  window.print();
+}
+
+function saveAndReturn(){
+  if(!lastGeneratedIds.length){
+    alert(
+      'Generate the labels first.'
+    );
+
+    return;
+  }
+
+  const url=
+    APP_URL+
+    '?labelsGenerated='+
+    encodeURIComponent(
+      lastGeneratedIds.join(',')
+    );
+
+  window.location.replace(
+    url
+  );
+}
+
+function returnWithoutSaving(){
+  window.location.replace(
+    APP_URL
+  );
+}
+
+function showMessage(message){
+  const el=
+    document.getElementById(
+      'message'
+    );
+
+  el.textContent=message;
+  el.style.display='block';
 }
 </script>
 
