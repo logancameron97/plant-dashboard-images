@@ -65,7 +65,6 @@ body{
 }
 
 .icon{
-  margin-bottom:3px;
   font-size:1.9rem;
 }
 
@@ -88,15 +87,19 @@ h1{
 }
 
 
-/* ======================================
+/* ==================================
    CAMERA
-====================================== */
+
+   No fixed height here.
+   Let the video determine its natural
+   aspect ratio so we don't leave a
+   large unused black section.
+================================== */
 
 #reader{
   width:100%;
-  min-height:360px;
   overflow:hidden;
-  background:#111;
+  background:#000;
   border-radius:15px;
 }
 
@@ -104,15 +107,18 @@ h1{
   display:block!important;
   width:100%!important;
   height:auto!important;
-  min-height:360px;
-  object-fit:cover!important;
-  border-radius:15px;
+  max-height:none!important;
+  object-fit:contain!important;
+}
+
+#reader img{
+  display:none!important;
 }
 
 
-/* ======================================
+/* ==================================
    STATUS
-====================================== */
+================================== */
 
 .status{
   min-height:42px;
@@ -138,9 +144,9 @@ h1{
 }
 
 
-/* ======================================
+/* ==================================
    MANUAL FALLBACK
-====================================== */
+================================== */
 
 .manual{
   margin-top:12px;
@@ -186,9 +192,9 @@ button{
 }
 
 
-/* ======================================
-   BOTTOM BUTTONS
-====================================== */
+/* ==================================
+   BUTTONS
+================================== */
 
 .bottom-actions{
   display:flex;
@@ -245,7 +251,6 @@ button{
 
   </div>
 
-
   <div class="scanner-card">
 
     <div id="reader"></div>
@@ -256,7 +261,6 @@ button{
     >
       Starting camera…
     </div>
-
 
     <div class="manual">
 
@@ -287,7 +291,6 @@ button{
 
     </div>
 
-
     <div class="bottom-actions">
 
       <button
@@ -311,14 +314,11 @@ button{
 
   </div>
 
-
   <div class="tip">
-    Hold the tag steady and let the camera focus.
-    The entire camera view is active for scanning.
+    The entire camera image is active. Hold the square Data Matrix steady and allow the camera to focus.
   </div>
 
 </div>
-
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -328,9 +328,8 @@ const APP_URL=
 
 let scanner=null;
 let scannerRunning=false;
-let scanComplete=false;
 let startingScanner=false;
-
+let scanComplete=false;
 
 document.addEventListener(
   'DOMContentLoaded',
@@ -356,9 +355,9 @@ document.addEventListener(
 );
 
 
-/* ======================================
+/* ==================================
    START CAMERA
-====================================== */
+================================== */
 
 async function startScanner(){
   if(
@@ -371,17 +370,13 @@ async function startScanner(){
 
   startingScanner=true;
 
-  const retry=
-    document.getElementById(
-      'retryButton'
-    );
-
-  retry.style.display='none';
+  document.getElementById(
+    'retryButton'
+  ).style.display='none';
 
   setStatus(
     'Requesting rear camera…'
   );
-
 
   try{
     if(
@@ -392,7 +387,6 @@ async function startScanner(){
       );
     }
 
-
     if(scanner){
       try{
         await scanner.clear();
@@ -401,42 +395,35 @@ async function startScanner(){
       scanner=null;
     }
 
-
-    /*
-    Only decode Data Matrix + QR.
-    */
     scanner=
       new Html5Qrcode(
         'reader',
         {
-          formatsToSupport:
-  Html5QrcodeSupportedFormats.DATA_MATRIX,
-  Html5QrcodeSupportedFormats.QR_CODE
-]
+          formatsToSupport:[
+            Html5QrcodeSupportedFormats.DATA_MATRIX,
+            Html5QrcodeSupportedFormats.QR_CODE
+          ],
+          verbose:false
         }
       );
 
-
     /*
-    IMPORTANT:
     No qrbox.
 
-    html5-qrcode therefore scans the
-    entire camera video instead of
-    shading part of the screen.
+    The complete video frame is used
+    for detection.
     */
     await scanner.start(
       {
         facingMode:'environment'
       },
       {
-        fps:12,
+        fps:15,
         disableFlip:true
       },
       handleScanSuccess,
       ()=>{}
     );
-
 
     scannerRunning=true;
     startingScanner=false;
@@ -444,7 +431,6 @@ async function startScanner(){
     setStatus(
       'Camera ready — scan a plant tag.'
     );
-
 
   }catch(error){
     console.error(error);
@@ -458,19 +444,23 @@ async function startScanner(){
       'error'
     );
 
-    retry.style.display='block';
+    document.getElementById(
+      'retryButton'
+    ).style.display='block';
   }
 }
 
 
-/* ======================================
-   SCAN RESULT
-====================================== */
+/* ==================================
+   SUCCESS
+================================== */
 
 function handleScanSuccess(
   decodedText
 ){
-  if(scanComplete)return;
+  if(scanComplete){
+    return;
+  }
 
   const plantId=
     normalizePlantId(
@@ -478,11 +468,6 @@ function handleScanSuccess(
     );
 
   if(!plantId){
-    setStatus(
-      'A code was detected, but it did not contain a valid plant ID.',
-      'error'
-    );
-
     return;
   }
 
@@ -492,19 +477,16 @@ function handleScanSuccess(
 }
 
 
-/* ======================================
-   MANUAL ID
-====================================== */
+/* ==================================
+   MANUAL ENTRY
+================================== */
 
 function submitManualId(){
-  const value=
-    document.getElementById(
-      'manualId'
-    ).value;
-
   const plantId=
     normalizePlantId(
-      value
+      document.getElementById(
+        'manualId'
+      ).value
     );
 
   if(!plantId){
@@ -522,14 +504,23 @@ function submitManualId(){
 }
 
 
-/* ======================================
-   FINISH SCAN
-====================================== */
+/* ==================================
+   FINISH
+
+   IMPORTANT:
+   No watering/repotting is performed
+   here.
+
+   Only the plant ID is returned to the
+   dashboard.
+================================== */
 
 async function finishScan(
   plantId
 ){
-  if(scanComplete)return;
+  if(scanComplete){
+    return;
+  }
 
   scanComplete=true;
 
@@ -538,30 +529,17 @@ async function finishScan(
     'success'
   );
 
-
   try{
     if(
       scanner&&
       scannerRunning
     ){
       await scanner.stop();
-
       scannerRunning=false;
     }
 
   }catch(error){}
 
-
-  /*
-  Only send the Plant ID.
-
-  There is deliberately NO action here.
-
-  The dashboard will show:
-  Water
-  Repot
-  Both
-  */
   setTimeout(
     ()=>{
       window.location.replace(
@@ -577,22 +555,18 @@ async function finishScan(
 }
 
 
-/* ======================================
-   NORMALIZE PLANT ID
-====================================== */
+/* ==================================
+   NORMALISE ID
+================================== */
 
-function normalizePlantId(
-  value
-){
-  const text=
+function normalizePlantId(value){
+  const match=
     String(value||'')
       .trim()
-      .toUpperCase();
-
-  const match=
-    text.match(
-      /\bP-\d{3,}\b/
-    );
+      .toUpperCase()
+      .match(
+        /\bP-\d{3,}\b/
+      );
 
   return match
     ?match[0]
@@ -600,9 +574,9 @@ function normalizePlantId(
 }
 
 
-/* ======================================
+/* ==================================
    CANCEL
-====================================== */
+================================== */
 
 async function returnToDashboard(){
   try{
@@ -612,7 +586,6 @@ async function returnToDashboard(){
     ){
       await scanner.stop();
     }
-
   }catch(error){}
 
   window.location.replace(
@@ -621,9 +594,9 @@ async function returnToDashboard(){
 }
 
 
-/* ======================================
-   STATUS
-====================================== */
+/* ==================================
+   HELPERS
+================================== */
 
 function setStatus(
   message,
@@ -646,10 +619,7 @@ function setStatus(
     );
 }
 
-
-function getErrorMessage(
-  error
-){
+function getErrorMessage(error){
   if(!error){
     return 'Unknown camera error.';
   }
