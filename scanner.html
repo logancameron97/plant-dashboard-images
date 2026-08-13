@@ -410,9 +410,11 @@ async function startScanner(){
         'reader',
         {
           formatsToSupport:[
-            Html5QrcodeSupportedFormats.DATA_MATRIX,
-            Html5QrcodeSupportedFormats.QR_CODE
-          ]
+  Html5QrcodeSupportedFormats.PDF_417,
+  Html5QrcodeSupportedFormats.AZTEC,
+  Html5QrcodeSupportedFormats.DATA_MATRIX,
+  Html5QrcodeSupportedFormats.QR_CODE
+]
         }
       );
 
