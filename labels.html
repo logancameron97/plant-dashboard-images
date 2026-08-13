@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<title>Plant Labels</title>
+
+<style>
+:root{
+  --bg:#eef5f0;
+  --card:#fff;
+  --text:#294136;
+  --muted:#74877d;
+  --border:#dbe7df;
+  --green:#6fa982;
+}
+
+*{
+  box-sizing:border-box;
+}
+
+body{
+  margin:0;
+  padding:20px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+
+.controls{
+  max-width:700px;
+  margin:0 auto 22px;
+  padding:18px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+}
+
+h1{
+  margin:0 0 5px;
+  font-size:1.4rem;
+}
+
+.description{
+  margin-bottom:14px;
+  color:var(--muted);
+  font-size:.84rem;
+}
+
+textarea{
+  width:100%;
+  height:110px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  resize:vertical;
+  font-family:monospace;
+  font-size:.85rem;
+}
+
+.settings{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin-top:10px;
+}
+
+.setting label{
+  display:block;
+  margin-bottom:4px;
+  color:var(--muted);
+  font-size:.7rem;
+}
+
+.setting input{
+  width:100%;
+  padding:8px;
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+
+.buttons{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+
+button{
+  flex:1;
+  padding:11px;
+  border:0;
+  border-radius:9px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.generate{
+  background:#7eb6a2;
+  color:#fff;
+}
+
+.print{
+  background:#6fa982;
+  color:#fff;
+}
+
+.back{
+  background:#dfe8e2;
+  color:var(--text);
+}
+
+#labels{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,14mm);
+  justify-content:center;
+  gap:2mm;
+}
+
+.label{
+  width:14mm;
+  height:18mm;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  background:#fff;
+}
+
+.label canvas{
+  display:block;
+  width:10.5mm!important;
+  height:10.5mm!important;
+  image-rendering:pixelated;
+}
+
+.id{
+  margin-top:.8mm;
+  color:#000;
+  font-family:Arial,sans-serif;
+  font-size:6pt;
+  font-weight:700;
+  line-height:1;
+}
+
+@media print{
+  @page{
+    margin:5mm;
+  }
+
+  body{
+    padding:0;
+    background:#fff;
+  }
+
+  .controls{
+    display:none!important;
+  }
+
+  #labels{
+    justify-content:start;
+  }
+
+  .label{
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+}
+
+@media(max-width:600px){
+  .settings{
+    grid-template-columns:1fr;
+  }
+
+  .buttons{
+    flex-direction:column;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="controls">
+
+  <h1>🏷️ Plant Labels</h1>
+
+  <div class="description">
+    Generates compact Data Matrix labels. Print at 100% / Actual Size.
+  </div>
+
+  <textarea id="ids"></textarea>
+
+  <div class="settings">
+
+    <div class="setting">
+      <label>Label width (mm)</label>
+      <input
+        id="labelWidth"
+        type="number"
+        value="14"
+        min="8"
+        step=".5"
+      >
+    </div>
+
+    <div class="setting">
+      <label>Label height (mm)</label>
+      <input
+        id="labelHeight"
+        type="number"
+        value="18"
+        min="10"
+        step=".5"
+      >
+    </div>
+
+    <div class="setting">
+      <label>Code size (mm)</label>
+      <input
+        id="codeSize"
+        type="number"
+        value="10.5"
+        min="6"
+        step=".5"
+      >
+    </div>
+
+  </div>
+
+  <div class="buttons">
+
+    <button
+      class="generate"
+      onclick="generateLabels()"
+    >
+      Generate
+    </button>
+
+    <button
+      class="print"
+      onclick="window.print()"
+    >
+      Print
+    </button>
+
+    <button
+      class="back"
+      onclick="window.location.href='app.html'"
+    >
+      Back
+    </button>
+
+  </div>
+
+</div>
+
+<div id="labels"></div>
+
+<script src="https://unpkg.com/bwip-js/dist/bwip-js-min.js"></script>
+
+<script>
+document.addEventListener(
+  'DOMContentLoaded',
+  ()=>{
+    const params=
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const ids=
+      params.get('ids')||'';
+
+    document.getElementById(
+      'ids'
+    ).value=
+      ids
+        .split(',')
+        .filter(Boolean)
+        .join('\n');
+
+    generateLabels();
+  }
+);
+
+function getIds(){
+  const text=
+    document.getElementById(
+      'ids'
+    ).value;
+
+  const matches=
+    text
+      .toUpperCase()
+      .match(/P-\d{3,}/g)||
+      [];
+
+  return [
+    ...new Set(matches)
+  ];
+}
+
+function generateLabels(){
+  if(typeof bwipjs==='undefined'){
+    alert(
+      'Barcode generator failed to load.'
+    );
+
+    return;
+  }
+
+  const ids=getIds();
+
+  const width=
+    Number(
+      document.getElementById(
+        'labelWidth'
+      ).value
+    )||14;
+
+  const height=
+    Number(
+      document.getElementById(
+        'labelHeight'
+      ).value
+    )||18;
+
+  const codeSize=
+    Number(
+      document.getElementById(
+        'codeSize'
+      ).value
+    )||12;
+
+  const container=
+    document.getElementById(
+      'labels'
+    );
+
+  container.innerHTML='';
+
+  container.style.gridTemplateColumns=
+    'repeat(auto-fill,'+
+    width+
+    'mm)';
+
+  ids.forEach(id=>{
+    const label=
+      document.createElement(
+        'div'
+      );
+
+    label.className=
+      'label';
+
+    label.style.width=
+      width+'mm';
+
+    label.style.height=
+      height+'mm';
+
+    const canvas=
+      document.createElement(
+        'canvas'
+      );
+
+    try{
+      bwipjs.toCanvas(
+        canvas,
+        {
+          bcid:'datamatrix',
+          text:id,
+          scale:8,
+          padding:1
+        }
+      );
+
+    }catch(error){
+      console.error(
+        id,
+        error
+      );
+
+      return;
+    }
+
+    canvas.style.width=
+      codeSize+'mm';
+
+    canvas.style.height=
+      codeSize+'mm';
+
+    const text=
+      document.createElement(
+        'div'
+      );
+
+    text.className='id';
+    text.textContent=id;
+
+    label.appendChild(
+      canvas
+    );
+
+    label.appendChild(
+      text
+    );
+
+    container.appendChild(
+      label
+    );
+  });
+}
+</script>
+
+</body>
+</html>
