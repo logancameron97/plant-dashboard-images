@@ -356,31 +356,16 @@ async function startScanner(){
       );
 
     await scanner.start(
-      {
-        facingMode:'environment'
-      },
-      {
-        fps:15,
-
-        qrbox:(width,height)=>{
-          return {
-            width:Math.min(
-              width*.82,
-              300
-            ),
-
-            height:Math.min(
-              height*.78,
-              340
-            )
-          };
-        },
-
-        disableFlip:true
-      },
-      handleScanSuccess,
-      ()=>{}
-    );
+  {
+    facingMode:'environment'
+  },
+  {
+    fps:12,
+    disableFlip:true
+  },
+  handleScanSuccess,
+  ()=>{}
+);
 
     scannerRunning=true;
 
