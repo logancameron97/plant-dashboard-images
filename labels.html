@@ -20,6 +20,7 @@
   --green:#6fa982;
   --green-soft:#e9f5ed;
   --blue:#79a9cf;
+  --purple:#879fd0;
   --soft:#f6faf7;
 }
 
@@ -199,6 +200,11 @@ button{
   color:#fff;
 }
 
+.download{
+  background:var(--purple);
+  color:#fff;
+}
+
 .done{
   background:#5f8e75;
   color:#fff;
@@ -230,7 +236,7 @@ button{
 }
 
 /*
-14mm wide x 40mm tall
+14 mm wide × 40 mm tall tag
 */
 
 #labels{
@@ -451,6 +457,14 @@ button{
     </button>
 
     <button
+      class="download"
+      type="button"
+      onclick="downloadLabelPngs()"
+    >
+      ⬇️ Save PNGs
+    </button>
+
+    <button
       class="done"
       type="button"
       onclick="saveAndReturn()"
@@ -517,9 +531,6 @@ function initLabels(){
       params.get('old')
     );
 
-  /*
-  Don't allow the same plant to appear in both sets.
-  */
   oldIds=
     oldIds.filter(
       id=>!newIds.includes(id)
@@ -621,19 +632,7 @@ function addOldPlant(){
   renderRemakes();
   renderOldSelect();
 
-  /*
-  If labels were already generated,
-  force regeneration so the new selection is included.
-  */
-  lastGeneratedIds=[];
-
-  document.getElementById(
-    'labels'
-  ).innerHTML='';
-
-  document.getElementById(
-    'previewTitle'
-  ).style.display='none';
+  clearGeneratedPreview();
 }
 
 function removeRemake(id){
@@ -645,15 +644,7 @@ function removeRemake(id){
   renderRemakes();
   renderOldSelect();
 
-  lastGeneratedIds=[];
-
-  document.getElementById(
-    'labels'
-  ).innerHTML='';
-
-  document.getElementById(
-    'previewTitle'
-  ).style.display='none';
+  clearGeneratedPreview();
 }
 
 function renderRemakes(){
@@ -685,6 +676,22 @@ function renderRemakes(){
           '</span>'
       )
       .join('');
+}
+
+function clearGeneratedPreview(){
+  lastGeneratedIds=[];
+
+  document.getElementById(
+    'labels'
+  ).innerHTML='';
+
+  document.getElementById(
+    'previewTitle'
+  ).style.display='none';
+
+  document.getElementById(
+    'message'
+  ).style.display='none';
 }
 
 function getSelectedIds(){
@@ -739,10 +746,6 @@ function generateLabels(){
       ).value
     )||30;
 
-  /*
-  Leave approximately 1mm white space
-  on the left and right.
-  */
   const maxMatrixWidth=
     Math.max(
       6,
@@ -770,6 +773,7 @@ function generateLabels(){
       );
 
     label.className='label';
+    label.dataset.plantId=id;
 
     label.style.width=
       labelWidth+'mm';
@@ -785,10 +789,6 @@ function generateLabels(){
     matrixArea.className=
       'matrix-area';
 
-    /*
-    Reserve roughly 6.5mm at the bottom
-    for the readable plant ID.
-    */
     matrixArea.style.height=
       Math.max(
         10,
@@ -895,10 +895,6 @@ function generateLabels(){
 }
 
 function makeVerticalCanvas(source){
-  /*
-  If bwip-js already created a vertical
-  symbol, leave it alone.
-  */
   if(source.height>=source.width){
     return source;
   }
@@ -919,10 +915,6 @@ function makeVerticalCanvas(source){
       '2d'
     );
 
-  /*
-  Disable interpolation so the Data Matrix
-  modules stay sharp.
-  */
   ctx.imageSmoothingEnabled=false;
 
   ctx.translate(
@@ -948,10 +940,6 @@ function sizeMatrixCanvas(
   maxWidthMm,
   maxHeightMm
 ){
-  /*
-  Preserve the exact barcode aspect ratio.
-  Never stretch the Data Matrix.
-  */
   const ratio=
     canvas.width/
     canvas.height;
@@ -987,6 +975,357 @@ function printLabels(){
   }
 
   window.print();
+}
+
+async function downloadLabelPngs(){
+  try{
+    if(!lastGeneratedIds.length){
+      generateLabels();
+
+      if(!lastGeneratedIds.length){
+        return;
+      }
+    }
+
+    const labels=[
+      ...document.querySelectorAll(
+        '#labels .label'
+      )
+    ];
+
+    if(!labels.length){
+      return;
+    }
+
+    showMessage(
+      'Creating PNG files…'
+    );
+
+    let downloaded=0;
+
+    for(const label of labels){
+      const file=
+        await buildLabelPng(
+          label
+        );
+
+      downloadBlob(
+        file.blob,
+        file.plantId+
+        '.png'
+      );
+
+      downloaded++;
+
+      /*
+      Small pause between downloads.
+      This helps with batches.
+      */
+      await delay(
+        250
+      );
+    }
+
+    showMessage(
+      downloaded+
+      (
+        downloaded===1
+          ?' PNG saved.'
+          :' PNGs saved.'
+      )
+    );
+
+  }catch(error){
+    console.error(error);
+
+    alert(
+      'PNG files could not be created.\n\n'+
+      (
+        error&&error.message
+          ?error.message
+          :String(error)
+      )
+    );
+  }
+}
+
+function buildLabelPng(label){
+  return new Promise(
+    (resolve,reject)=>{
+      const plantId=
+        label.dataset.plantId;
+
+      const matrixCanvas=
+        label.querySelector(
+          '.matrix-area canvas'
+        );
+
+      if(
+        !plantId||
+        !matrixCanvas
+      ){
+        reject(
+          new Error(
+            'The label could not be read.'
+          )
+        );
+
+        return;
+      }
+
+      const widthMm=
+        Number(
+          document.getElementById(
+            'labelWidth'
+          ).value
+        )||14;
+
+      const heightMm=
+        Number(
+          document.getElementById(
+            'labelHeight'
+          ).value
+        )||40;
+
+      const maxMatrixHeight=
+        Number(
+          document.getElementById(
+            'matrixHeight'
+          ).value
+        )||30;
+
+      /*
+      300 DPI output.
+
+      300 pixels per inch / 25.4mm
+      */
+      const pxPerMm=
+        300/25.4;
+
+      const widthPx=
+        Math.round(
+          widthMm*
+          pxPerMm
+        );
+
+      const heightPx=
+        Math.round(
+          heightMm*
+          pxPerMm
+        );
+
+      const output=
+        document.createElement(
+          'canvas'
+        );
+
+      output.width=
+        widthPx;
+
+      output.height=
+        heightPx;
+
+      const ctx=
+        output.getContext(
+          '2d'
+        );
+
+      ctx.imageSmoothingEnabled=false;
+
+      /*
+      White tag background
+      */
+      ctx.fillStyle=
+        '#ffffff';
+
+      ctx.fillRect(
+        0,
+        0,
+        widthPx,
+        heightPx
+      );
+
+      /*
+      Matrix dimensions.
+
+      Keep the Data Matrix proportional.
+      Never stretch it.
+      */
+      const maxMatrixWidthMm=
+        Math.max(
+          6,
+          widthMm-2
+        );
+
+      const ratio=
+        matrixCanvas.width/
+        matrixCanvas.height;
+
+      let matrixHeightMm=
+        maxMatrixHeight;
+
+      let matrixWidthMm=
+        matrixHeightMm*
+        ratio;
+
+      if(
+        matrixWidthMm>
+        maxMatrixWidthMm
+      ){
+        matrixWidthMm=
+          maxMatrixWidthMm;
+
+        matrixHeightMm=
+          matrixWidthMm/
+          ratio;
+      }
+
+      const matrixWidthPx=
+        Math.round(
+          matrixWidthMm*
+          pxPerMm
+        );
+
+      const matrixHeightPx=
+        Math.round(
+          matrixHeightMm*
+          pxPerMm
+        );
+
+      const matrixX=
+        Math.round(
+          (
+            widthPx-
+            matrixWidthPx
+          )/2
+        );
+
+      /*
+      Start roughly 1mm from top.
+      */
+      const matrixY=
+        Math.round(
+          1*
+          pxPerMm
+        );
+
+      ctx.drawImage(
+        matrixCanvas,
+        0,
+        0,
+        matrixCanvas.width,
+        matrixCanvas.height,
+        matrixX,
+        matrixY,
+        matrixWidthPx,
+        matrixHeightPx
+      );
+
+      /*
+      Human-readable ID.
+
+      Centred horizontally underneath
+      the rectangular matrix.
+      */
+      ctx.fillStyle=
+        '#000000';
+
+      ctx.textAlign=
+        'center';
+
+      ctx.textBaseline=
+        'middle';
+
+      /*
+      About 8pt equivalent at 300 DPI.
+      */
+      ctx.font=
+        'bold '+
+        Math.round(
+          3*
+          pxPerMm
+        )+
+        'px Arial';
+
+      const textY=
+        Math.round(
+          (
+            heightMm-3
+          )*
+          pxPerMm
+        );
+
+      ctx.fillText(
+        plantId,
+        widthPx/2,
+        textY
+      );
+
+      output.toBlob(
+        blob=>{
+          if(!blob){
+            reject(
+              new Error(
+                'PNG could not be created.'
+              )
+            );
+
+            return;
+          }
+
+          resolve({
+            plantId:plantId,
+            blob:blob
+          });
+        },
+        'image/png'
+      );
+    }
+  );
+}
+
+function downloadBlob(
+  blob,
+  filename
+){
+  const url=
+    URL.createObjectURL(
+      blob
+    );
+
+  const link=
+    document.createElement(
+      'a'
+    );
+
+  link.href=url;
+  link.download=filename;
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+  link.remove();
+
+  setTimeout(
+    ()=>{
+      URL.revokeObjectURL(
+        url
+      );
+    },
+    1000
+  );
+}
+
+function delay(ms){
+  return new Promise(
+    resolve=>
+      setTimeout(
+        resolve,
+        ms
+      )
+  );
 }
 
 function saveAndReturn(){
