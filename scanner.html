@@ -46,6 +46,7 @@ body{
 
 body{
   min-height:100dvh;
+
   padding:
     max(16px,env(safe-area-inset-top))
     16px
@@ -87,36 +88,23 @@ h1{
 
 /* CAMERA */
 
-.camera-wrap{
-  position:relative;
+#reader{
   width:100%;
   overflow:hidden;
   background:#000;
   border-radius:15px;
 }
 
-#video{
-  display:block;
-  width:100%;
-  height:auto;
-  background:#000;
-  object-fit:cover;
+#reader video{
+  display:block!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  object-fit:cover!important;
 }
 
-/* Visual guide only.
-   ZXing still scans the full frame. */
-
-.guide{
-  position:absolute;
-  left:50%;
-  top:50%;
-  width:68%;
-  aspect-ratio:1/1;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-  border:2px solid rgba(255,255,255,.92);
-  border-radius:16px;
-  box-shadow:0 0 0 9999px rgba(0,0,0,.10);
+#reader img{
+  display:none!important;
 }
 
 /* STATUS */
@@ -144,7 +132,7 @@ h1{
   color:var(--red);
 }
 
-/* MANUAL FALLBACK */
+/* MANUAL */
 
 .manual{
   margin-top:12px;
@@ -189,8 +177,6 @@ button{
   font-weight:700;
 }
 
-/* BUTTONS */
-
 .bottom-actions{
   display:flex;
   gap:8px;
@@ -231,29 +217,24 @@ button{
 <div class="wrapper">
 
   <div class="header">
-    <div class="icon">🌿</div>
 
-    <h1>Scan Plant</h1>
+    <div class="icon">
+      🌿
+    </div>
+
+    <h1>
+      Scan Plant
+    </h1>
 
     <div class="subtitle">
-      Point the camera at the square Data Matrix.
+      Point the camera at the QR label.
     </div>
+
   </div>
 
   <div class="scanner-card">
 
-    <div class="camera-wrap">
-
-      <video
-        id="video"
-        playsinline
-        muted
-        autoplay
-      ></video>
-
-      <div class="guide"></div>
-
-    </div>
+    <div id="reader"></div>
 
     <div
       class="status"
@@ -315,27 +296,29 @@ button{
   </div>
 
   <div class="tip">
-    You do not need to perfectly fill the square.
-    Hold the tag steady and give the camera a moment to focus.
+    Hold the tag reasonably steady. The entire camera frame is active for QR scanning.
   </div>
 
 </div>
 
-<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
 const APP_URL=
   'https://logancameron97.github.io/plant-dashboard-images/app.html';
 
-let codeReader=null;
-let scanComplete=false;
+let scanner=null;
+let scannerRunning=false;
 let startingScanner=false;
+let scanComplete=false;
 
 document.addEventListener(
   'DOMContentLoaded',
   ()=>{
     document
-      .getElementById('manualId')
+      .getElementById(
+        'manualId'
+      )
       .addEventListener(
         'keydown',
         event=>{
@@ -347,18 +330,19 @@ document.addEventListener(
 
     setTimeout(
       startScanner,
-      300
+      250
     );
   }
 );
 
 
-/* =====================================
-   START SCANNER
-===================================== */
+/* ======================================
+   START
+====================================== */
 
 async function startScanner(){
   if(
+    scannerRunning||
     startingScanner||
     scanComplete
   ){
@@ -376,91 +360,66 @@ async function startScanner(){
   );
 
   try{
-    stopScanner();
-
     if(
-      typeof ZXing==='undefined'
+      typeof Html5Qrcode==='undefined'
     ){
       throw new Error(
-        'ZXing scanner library did not load.'
+        'Scanner library did not load.'
       );
     }
 
-    const hints=
-      new Map();
+    if(scanner){
+      try{
+        await scanner.clear();
+      }catch(error){}
+
+      scanner=null;
+    }
 
     /*
-    Only look for Data Matrix.
+    QR ONLY.
     */
-    hints.set(
-      ZXing.DecodeHintType.POSSIBLE_FORMATS,
-      [
-        ZXing.BarcodeFormat.DATA_MATRIX
-      ]
-    );
-
-    /*
-    Spend more effort trying to decode
-    small / difficult labels.
-    */
-    hints.set(
-      ZXing.DecodeHintType.TRY_HARDER,
-      true
-    );
-
-    codeReader=
-      new ZXing.BrowserMultiFormatReader(
-        hints,
-        50
+    scanner=
+      new Html5Qrcode(
+        'reader',
+        {
+          formatsToSupport:[
+            Html5QrcodeSupportedFormats.QR_CODE
+          ],
+          verbose:false
+        }
       );
 
     /*
-    Passing undefined avoids the
-    listVideoInputDevices error.
+    No qrbox.
 
-    ZXing/browser will request the camera
-    directly.
+    The entire video frame is available
+    to the QR decoder.
     */
-    await codeReader.decodeFromVideoDevice(
-      undefined,
-      'video',
-      (result,error)=>{
-        if(scanComplete){
-          return;
-        }
-
-        if(result){
-          const text=
-            typeof result.getText==='function'
-              ?result.getText()
-              :String(result.text||'');
-
-          const plantId=
-            normalizePlantId(
-              text
-            );
-
-          if(plantId){
-            finishScan(
-              plantId
-            );
-          }
-        }
-      }
+    await scanner.start(
+      {
+        facingMode:'environment'
+      },
+      {
+        fps:20,
+        disableFlip:true
+      },
+      handleScanSuccess,
+      ()=>{}
     );
 
+    scannerRunning=true;
     startingScanner=false;
 
     setStatus(
-      'Camera ready — scan a plant tag.'
+      'Camera ready — scan a QR label.'
     );
 
   }catch(error){
     console.error(error);
 
+    scannerRunning=false;
     startingScanner=false;
-
-    stopScanner();
 
     setStatus(
       'Camera could not start: '+
@@ -475,19 +434,42 @@ async function startScanner(){
 }
 
 
-/* =====================================
-   MANUAL ENTRY
-===================================== */
+/* ======================================
+   QR RESULT
+====================================== */
 
-function submitManualId(){
-  const value=
-    document.getElementById(
-      'manualId'
-    ).value;
+function handleScanSuccess(
+  decodedText
+){
+  if(scanComplete){
+    return;
+  }
 
   const plantId=
     normalizePlantId(
-      value
+      decodedText
+    );
+
+  if(!plantId){
+    return;
+  }
+
+  finishScan(
+    plantId
+  );
+}
+
+
+/* ======================================
+   MANUAL
+====================================== */
+
+function submitManualId(){
+  const plantId=
+    normalizePlantId(
+      document.getElementById(
+        'manualId'
+      ).value
     );
 
   if(!plantId){
@@ -505,16 +487,15 @@ function submitManualId(){
 }
 
 
-/* =====================================
+/* ======================================
    SUCCESS
 
-   Only sends the ID to the app.
+   No watering occurs here.
 
-   Water / Repot / Both happens
-   afterwards on the dashboard.
-===================================== */
+   Only the plant ID is sent back.
+====================================== */
 
-function finishScan(
+async function finishScan(
   plantId
 ){
   if(scanComplete){
@@ -528,7 +509,16 @@ function finishScan(
     'success'
   );
 
-  stopScanner();
+  try{
+    if(
+      scanner&&
+      scannerRunning
+    ){
+      await scanner.stop();
+
+      scannerRunning=false;
+    }
+  }catch(error){}
 
   setTimeout(
     ()=>{
@@ -540,14 +530,14 @@ function finishScan(
         )
       );
     },
-    250
+    200
   );
 }
 
 
-/* =====================================
-   PLANT ID
-===================================== */
+/* ======================================
+   ID
+====================================== */
 
 function normalizePlantId(
   value
@@ -566,47 +556,19 @@ function normalizePlantId(
 }
 
 
-/* =====================================
-   STOP CAMERA
-===================================== */
+/* ======================================
+   CANCEL
+====================================== */
 
-function stopScanner(){
+async function returnToDashboard(){
   try{
-    if(codeReader){
-      codeReader.reset();
+    if(
+      scanner&&
+      scannerRunning
+    ){
+      await scanner.stop();
     }
   }catch(error){}
-
-  codeReader=null;
-
-  const video=
-    document.getElementById(
-      'video'
-    );
-
-  if(
-    video&&
-    video.srcObject
-  ){
-    try{
-      video.srcObject
-        .getTracks()
-        .forEach(
-          track=>track.stop()
-        );
-    }catch(error){}
-
-    video.srcObject=null;
-  }
-}
-
-
-/* =====================================
-   CANCEL
-===================================== */
-
-function returnToDashboard(){
-  stopScanner();
 
   window.location.replace(
     APP_URL
@@ -614,9 +576,9 @@ function returnToDashboard(){
 }
 
 
-/* =====================================
+/* ======================================
    HELPERS
-===================================== */
+====================================== */
 
 function setStatus(
   message,
@@ -639,10 +601,7 @@ function setStatus(
     );
 }
 
-
-function getErrorMessage(
-  error
-){
+function getErrorMessage(error){
   if(!error){
     return 'Unknown camera error.';
   }
@@ -657,14 +616,6 @@ function getErrorMessage(
     String(error)
   );
 }
-
-
-/* Stop camera if Safari navigates away */
-
-window.addEventListener(
-  'pagehide',
-  stopScanner
-);
 </script>
 
 </body>
