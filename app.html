@@ -2,11 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,8 +18,7 @@
 <title>Plant Care</title>
 
 <style>
-html,
-body{
+html,body{
   margin:0;
   padding:0;
   width:100%;
@@ -33,45 +28,59 @@ body{
 }
 
 #app{
+  display:block;
   width:100%;
   height:100%;
   border:0;
-  display:block;
 }
 </style>
 </head>
 
 <body>
 
-<iframe
-  id="app"
-  allow="camera"
-></iframe>
+<iframe id="app"></iframe>
 
 <script>
 const APPS_SCRIPT_URL=
   'https://script.google.com/macros/s/AKfycbyAwA-vQVo4DRhlkrIQCN5lHUrXifpexpeZ2FxWmid7M_KcALGA6iRlz0U7tdzK5RzK/exec?view=phone';
 
 const params=
-  new URLSearchParams(
-    window.location.search
-  );
+  new URLSearchParams(window.location.search);
 
 const scan=
   params.get('scan');
 
-let appUrl=
-  APPS_SCRIPT_URL;
+const action=
+  params.get('action');
+
+let url=APPS_SCRIPT_URL;
 
 if(scan){
-  appUrl+=
+  url+=
     '&scan='+
     encodeURIComponent(scan);
 }
 
-document.getElementById(
-  'app'
-).src=appUrl;
+if(action){
+  url+=
+    '&action='+
+    encodeURIComponent(action);
+}
+
+document.getElementById('app').src=url;
+
+/*
+Remove scan/action from the outer URL immediately.
+This prevents an accidental page refresh from repeating
+a watering or repotting action.
+*/
+if(scan||action){
+  history.replaceState(
+    {},
+    '',
+    window.location.pathname
+  );
+}
 </script>
 
 </body>
