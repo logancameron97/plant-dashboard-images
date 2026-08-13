@@ -8,7 +8,10 @@
   content="width=device-width,initial-scale=1,viewport-fit=cover"
 >
 
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta
+  name="apple-mobile-web-app-capable"
+  content="yes"
+>
 
 <title>Scan Plant</title>
 
@@ -33,7 +36,8 @@
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 
-html,body{
+html,
+body{
   width:100%;
   min-height:100%;
   background:var(--bg);
@@ -42,6 +46,7 @@ html,body{
 
 body{
   min-height:100dvh;
+
   padding:
     max(16px,env(safe-area-inset-top))
     16px
@@ -82,18 +87,32 @@ h1{
   box-shadow:0 10px 30px rgba(50,75,62,.1);
 }
 
+
+/* ======================================
+   CAMERA
+====================================== */
+
 #reader{
   width:100%;
-  min-height:340px;
+  min-height:360px;
   overflow:hidden;
   background:#111;
   border-radius:15px;
 }
 
 #reader video{
+  display:block!important;
   width:100%!important;
+  height:auto!important;
+  min-height:360px;
   object-fit:cover!important;
+  border-radius:15px;
 }
+
+
+/* ======================================
+   STATUS
+====================================== */
 
 .status{
   min-height:42px;
@@ -117,6 +136,11 @@ h1{
   background:var(--red-soft);
   color:var(--red);
 }
+
+
+/* ======================================
+   MANUAL FALLBACK
+====================================== */
 
 .manual{
   margin-top:12px;
@@ -161,6 +185,11 @@ button{
   font-weight:700;
 }
 
+
+/* ======================================
+   BOTTOM BUTTONS
+====================================== */
+
 .bottom-actions{
   display:flex;
   gap:8px;
@@ -201,14 +230,21 @@ button{
 <div class="wrapper">
 
   <div class="header">
-    <div class="icon">🌿</div>
 
-    <h1>Scan Plant</h1>
+    <div class="icon">
+      🌿
+    </div>
+
+    <h1>
+      Scan Plant
+    </h1>
 
     <div class="subtitle">
       Scan the plant tag, then choose what you did.
     </div>
+
   </div>
+
 
   <div class="scanner-card">
 
@@ -220,6 +256,7 @@ button{
     >
       Starting camera…
     </div>
+
 
     <div class="manual">
 
@@ -250,6 +287,7 @@ button{
 
     </div>
 
+
     <div class="bottom-actions">
 
       <button
@@ -273,11 +311,14 @@ button{
 
   </div>
 
+
   <div class="tip">
-    The scanner accepts rectangular Data Matrix codes and standard QR codes.
+    Hold the tag steady and let the camera focus.
+    The entire camera view is active for scanning.
   </div>
 
 </div>
+
 
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -288,12 +329,16 @@ const APP_URL=
 let scanner=null;
 let scannerRunning=false;
 let scanComplete=false;
+let startingScanner=false;
+
 
 document.addEventListener(
   'DOMContentLoaded',
   ()=>{
     document
-      .getElementById('manualId')
+      .getElementById(
+        'manualId'
+      )
       .addEventListener(
         'keydown',
         event=>{
@@ -310,13 +355,21 @@ document.addEventListener(
   }
 );
 
+
+/* ======================================
+   START CAMERA
+====================================== */
+
 async function startScanner(){
   if(
     scannerRunning||
+    startingScanner||
     scanComplete
   ){
     return;
   }
+
+  startingScanner=true;
 
   const retry=
     document.getElementById(
@@ -329,6 +382,7 @@ async function startScanner(){
     'Requesting rear camera…'
   );
 
+
   try{
     if(
       typeof Html5Qrcode==='undefined'
@@ -338,12 +392,19 @@ async function startScanner(){
       );
     }
 
+
     if(scanner){
       try{
-        scanner.clear();
+        await scanner.clear();
       }catch(error){}
+
+      scanner=null;
     }
 
+
+    /*
+    Only decode Data Matrix + QR.
+    */
     scanner=
       new Html5Qrcode(
         'reader',
@@ -355,28 +416,41 @@ async function startScanner(){
         }
       );
 
+
+    /*
+    IMPORTANT:
+    No qrbox.
+
+    html5-qrcode therefore scans the
+    entire camera video instead of
+    shading part of the screen.
+    */
     await scanner.start(
-  {
-    facingMode:'environment'
-  },
-  {
-    fps:12,
-    disableFlip:true
-  },
-  handleScanSuccess,
-  ()=>{}
-);
+      {
+        facingMode:'environment'
+      },
+      {
+        fps:12,
+        disableFlip:true
+      },
+      handleScanSuccess,
+      ()=>{}
+    );
+
 
     scannerRunning=true;
+    startingScanner=false;
 
     setStatus(
       'Camera ready — scan a plant tag.'
     );
 
+
   }catch(error){
     console.error(error);
 
     scannerRunning=false;
+    startingScanner=false;
 
     setStatus(
       'Camera could not start: '+
@@ -388,7 +462,14 @@ async function startScanner(){
   }
 }
 
-function handleScanSuccess(decodedText){
+
+/* ======================================
+   SCAN RESULT
+====================================== */
+
+function handleScanSuccess(
+  decodedText
+){
   if(scanComplete)return;
 
   const plantId=
@@ -409,6 +490,11 @@ function handleScanSuccess(decodedText){
     plantId
   );
 }
+
+
+/* ======================================
+   MANUAL ID
+====================================== */
 
 function submitManualId(){
   const value=
@@ -435,7 +521,14 @@ function submitManualId(){
   );
 }
 
-async function finishScan(plantId){
+
+/* ======================================
+   FINISH SCAN
+====================================== */
+
+async function finishScan(
+  plantId
+){
   if(scanComplete)return;
 
   scanComplete=true;
@@ -445,16 +538,30 @@ async function finishScan(plantId){
     'success'
   );
 
+
   try{
     if(
       scanner&&
       scannerRunning
     ){
       await scanner.stop();
+
       scannerRunning=false;
     }
+
   }catch(error){}
 
+
+  /*
+  Only send the Plant ID.
+
+  There is deliberately NO action here.
+
+  The dashboard will show:
+  Water
+  Repot
+  Both
+  */
   setTimeout(
     ()=>{
       window.location.replace(
@@ -469,7 +576,14 @@ async function finishScan(plantId){
   );
 }
 
-function normalizePlantId(value){
+
+/* ======================================
+   NORMALIZE PLANT ID
+====================================== */
+
+function normalizePlantId(
+  value
+){
   const text=
     String(value||'')
       .trim()
@@ -480,8 +594,15 @@ function normalizePlantId(value){
       /\bP-\d{3,}\b/
     );
 
-  return match?match[0]:'';
+  return match
+    ?match[0]
+    :'';
 }
+
+
+/* ======================================
+   CANCEL
+====================================== */
 
 async function returnToDashboard(){
   try{
@@ -491,12 +612,18 @@ async function returnToDashboard(){
     ){
       await scanner.stop();
     }
+
   }catch(error){}
 
   window.location.replace(
     APP_URL
   );
 }
+
+
+/* ======================================
+   STATUS
+====================================== */
 
 function setStatus(
   message,
@@ -507,13 +634,22 @@ function setStatus(
       'status'
     );
 
-  status.textContent=message;
+  status.textContent=
+    message;
+
   status.className=
     'status'+
-    (type?' '+type:'');
+    (
+      type
+        ?' '+type
+        :''
+    );
 }
 
-function getErrorMessage(error){
+
+function getErrorMessage(
+  error
+){
   if(!error){
     return 'Unknown camera error.';
   }
