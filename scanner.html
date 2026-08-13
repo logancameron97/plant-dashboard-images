@@ -2,7 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1,viewport-fit=cover"
+>
+
+<meta
+  name="apple-mobile-web-app-capable"
+  content="yes"
+>
+
+<meta
+  name="apple-mobile-web-app-status-bar-style"
+  content="default"
+>
 
 <title>Scan Plant</title>
 
@@ -14,6 +28,9 @@
   --muted:#74877d;
   --border:#dbe7df;
   --green:#6fa982;
+  --green-soft:#e9f5ed;
+  --red-soft:#faeeee;
+  --red:#a35858;
   --soft:#f6faf7;
 }
 
@@ -77,7 +94,7 @@ h1{
 
 #reader{
   width:100%;
-  min-height:320px;
+  min-height:340px;
   overflow:hidden;
   background:#111;
   border-radius:17px;
@@ -85,6 +102,7 @@ h1{
 
 #reader video{
   width:100%!important;
+  height:auto!important;
   object-fit:cover!important;
 }
 
@@ -101,14 +119,14 @@ h1{
 }
 
 .status.success{
-  background:#e9f5ed;
+  background:var(--green-soft);
   color:#4f8f63;
   font-weight:700;
 }
 
 .status.error{
-  background:#faeeee;
-  color:#a35858;
+  background:var(--red-soft);
+  color:var(--red);
 }
 
 .actions{
@@ -156,8 +174,13 @@ button{
 <div class="wrapper">
 
   <div class="header">
-    <div class="icon">🌿</div>
-    <h1>Scan Plant</h1>
+    <div class="icon">
+      🌿
+    </div>
+
+    <h1>
+      Scan Plant
+    </h1>
 
     <div class="subtitle">
       Point the rear camera at the plant tag.
@@ -168,7 +191,10 @@ button{
 
     <div id="reader"></div>
 
-    <div class="status" id="status">
+    <div
+      class="status"
+      id="status"
+    >
       Starting camera…
     </div>
 
@@ -196,8 +222,7 @@ button{
   </div>
 
   <div class="tip">
-    Move the phone closer until the code fills most of the scan box.
-    The scanner accepts Data Matrix or QR codes containing IDs such as
+    Scan a Data Matrix or QR code containing a plant ID such as
     <strong>P-001</strong>.
   </div>
 
@@ -224,7 +249,10 @@ document.addEventListener(
 );
 
 async function startScanner(){
-  if(scannerRunning||scanComplete){
+  if(
+    scannerRunning||
+    scanComplete
+  ){
     return;
   }
 
@@ -233,14 +261,17 @@ async function startScanner(){
       'startButton'
     );
 
-  startButton.style.display='none';
+  startButton.style.display=
+    'none';
 
   setStatus(
     'Requesting camera access…'
   );
 
   try{
-    if(typeof Html5Qrcode==='undefined'){
+    if(
+      typeof Html5Qrcode==='undefined'
+    ){
       throw new Error(
         'Scanner library did not load.'
       );
@@ -276,7 +307,7 @@ async function startScanner(){
             Math.max(
               180,
               Math.floor(
-                available*.7
+                available*.72
               )
             )
           );
@@ -292,7 +323,8 @@ async function startScanner(){
 
     await scanner.start(
       {
-        facingMode:'environment'
+        facingMode:
+          'environment'
       },
       config,
       handleScanSuccess,
@@ -306,7 +338,9 @@ async function startScanner(){
     );
 
   }catch(error){
-    console.error(error);
+    console.error(
+      error
+    );
 
     scannerRunning=false;
 
@@ -316,8 +350,11 @@ async function startScanner(){
       'error'
     );
 
-    startButton.style.display='block';
-    startButton.textContent='Try Again';
+    startButton.style.display=
+      'block';
+
+    startButton.textContent=
+      'Try Again';
   }
 }
 
@@ -336,7 +373,7 @@ async function handleScanSuccess(
 
   if(!plantId){
     setStatus(
-      'Code detected, but it does not contain a valid plant ID. Expected something like P-001.',
+      'Code detected, but it does not contain a valid plant ID.',
       'error'
     );
 
@@ -351,7 +388,9 @@ async function handleScanSuccess(
   );
 
   if(navigator.vibrate){
-    navigator.vibrate(80);
+    navigator.vibrate(
+      80
+    );
   }
 
   try{
@@ -360,11 +399,12 @@ async function handleScanSuccess(
       scannerRunning
     ){
       await scanner.stop();
+
       scannerRunning=false;
     }
+
   }catch(error){
     console.log(
-      'Scanner stop:',
       error
     );
   }
@@ -410,6 +450,7 @@ async function returnToDashboard(){
     ){
       await scanner.stop();
     }
+
   }catch(error){}
 
   window.location.replace(
@@ -426,7 +467,8 @@ function setStatus(
       'status'
     );
 
-  status.textContent=message;
+  status.textContent=
+    message;
 
   status.className=
     'status'+
@@ -442,13 +484,17 @@ function getErrorMessage(error){
     return 'Unknown camera error.';
   }
 
-  if(typeof error==='string'){
+  if(
+    typeof error==='string'
+  ){
     return error;
   }
 
-  return error.message||
+  return (
+    error.message||
     error.name||
-    String(error);
+    String(error)
+  );
 }
 </script>
 
