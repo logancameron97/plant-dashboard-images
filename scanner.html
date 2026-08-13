@@ -2,21 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width,initial-scale=1,viewport-fit=cover"
->
-
-<meta
-  name="apple-mobile-web-app-capable"
-  content="yes"
->
-
-<meta
-  name="apple-mobile-web-app-status-bar-style"
-  content="default"
->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 
 <title>Scan Plant</title>
 
@@ -29,9 +17,12 @@
   --border:#dbe7df;
   --green:#6fa982;
   --green-soft:#e9f5ed;
-  --red-soft:#faeeee;
-  --red:#a35858;
+  --blue:#67aee3;
+  --orange:#c88d68;
+  --both:#76b7b2;
   --soft:#f6faf7;
+  --red:#a35858;
+  --red-soft:#faeeee;
 }
 
 *{
@@ -50,71 +41,102 @@ html,body{
 
 body{
   min-height:100dvh;
-  padding:
-    max(18px,env(safe-area-inset-top))
-    18px
-    max(18px,env(safe-area-inset-bottom));
+  padding:max(16px,env(safe-area-inset-top)) 16px max(18px,env(safe-area-inset-bottom));
 }
 
 .wrapper{
   width:100%;
   max-width:520px;
-  margin:0 auto;
+  margin:auto;
 }
 
 .header{
-  margin-bottom:18px;
+  margin-bottom:15px;
   text-align:center;
 }
 
-.icon{
-  margin-bottom:6px;
-  font-size:2rem;
+.header .icon{
+  margin-bottom:3px;
+  font-size:1.8rem;
 }
 
 h1{
-  font-size:1.45rem;
+  font-size:1.35rem;
 }
 
 .subtitle{
-  margin-top:6px;
+  margin-top:4px;
   color:var(--muted);
-  font-size:.9rem;
-  line-height:1.4;
+  font-size:.82rem;
+}
+
+.mode-title{
+  margin:0 0 7px;
+  color:var(--muted);
+  font-size:.75rem;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+}
+
+.mode-selector{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+  margin-bottom:12px;
+}
+
+.mode{
+  padding:10px 5px;
+  border:2px solid transparent;
+  border-radius:11px;
+  color:#fff;
+  font-size:.77rem;
+  font-weight:700;
+  opacity:.55;
+}
+
+.mode.water{background:var(--blue)}
+.mode.repot{background:var(--orange)}
+.mode.both{background:var(--both)}
+
+.mode.selected{
+  border-color:#294136;
+  opacity:1;
+  transform:scale(1.02);
 }
 
 .scanner-card{
+  padding:11px;
   overflow:hidden;
-  padding:12px;
   background:var(--card);
   border:1px solid var(--border);
-  border-radius:24px;
-  box-shadow:0 12px 35px rgba(50,75,62,.12);
+  border-radius:22px;
+  box-shadow:0 10px 30px rgba(50,75,62,.1);
 }
 
 #reader{
   width:100%;
-  min-height:340px;
+  min-height:330px;
   overflow:hidden;
   background:#111;
-  border-radius:17px;
+  border-radius:15px;
 }
 
 #reader video{
   width:100%!important;
-  height:auto!important;
   object-fit:cover!important;
 }
 
 .status{
-  min-height:45px;
-  margin-top:14px;
-  padding:11px 13px;
+  min-height:42px;
+  margin-top:11px;
+  padding:10px;
   background:var(--soft);
-  border-radius:11px;
+  border-radius:10px;
   color:var(--muted);
-  font-size:.85rem;
-  line-height:1.4;
+  font-size:.8rem;
+  line-height:1.35;
   text-align:center;
 }
 
@@ -129,42 +151,81 @@ h1{
   color:var(--red);
 }
 
-.actions{
-  display:flex;
-  gap:10px;
+.manual{
   margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid var(--border);
+}
+
+.manual-label{
+  margin-bottom:6px;
+  color:var(--muted);
+  font-size:.75rem;
+  font-weight:700;
+}
+
+.manual-row{
+  display:flex;
+  gap:7px;
+}
+
+.manual-row input{
+  flex:1;
+  min-width:0;
+  padding:11px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--soft);
+  color:var(--text);
+  font-size:1rem;
+  text-transform:uppercase;
 }
 
 button{
-  flex:1;
-  padding:12px;
   border:0;
-  border-radius:11px;
-  font-size:.9rem;
-  font-weight:700;
   cursor:pointer;
+  touch-action:manipulation;
 }
 
-.primary{
+.manual-button{
+  padding:0 14px;
+  border-radius:10px;
+  background:var(--green);
+  color:#fff;
+  font-weight:700;
+}
+
+.bottom-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+
+.bottom-actions button{
+  flex:1;
+  padding:11px;
+  border-radius:10px;
+  font-size:.82rem;
+  font-weight:700;
+}
+
+.retry{
+  display:none;
   background:var(--green);
   color:#fff;
 }
 
-.secondary{
+.cancel{
   background:#dfe8e2;
   color:var(--text);
 }
 
 .tip{
-  margin-top:16px;
+  margin-top:12px;
   color:var(--muted);
-  font-size:.78rem;
-  line-height:1.5;
+  font-size:.72rem;
+  line-height:1.4;
   text-align:center;
-}
-
-#startButton{
-  display:none;
 }
 </style>
 </head>
@@ -174,56 +235,70 @@ button{
 <div class="wrapper">
 
   <div class="header">
-    <div class="icon">
-      🌿
-    </div>
+    <div class="icon">🌿</div>
+    <h1>Scan Plant</h1>
+    <div class="subtitle">Choose the action, then scan the tag.</div>
+  </div>
 
-    <h1>
-      Scan Plant
-    </h1>
+  <div class="mode-title">Action after scan</div>
 
-    <div class="subtitle">
-      Point the rear camera at the plant tag.
-    </div>
+  <div class="mode-selector">
+    <button class="mode water" id="modeWater" onclick="selectMode('WATER')">
+      💧 Water
+    </button>
+
+    <button class="mode repot" id="modeRepot" onclick="selectMode('REPOT')">
+      🪴 Repot
+    </button>
+
+    <button class="mode both" id="modeBoth" onclick="selectMode('BOTH')">
+      ✨ Both
+    </button>
   </div>
 
   <div class="scanner-card">
 
     <div id="reader"></div>
 
-    <div
-      class="status"
-      id="status"
-    >
+    <div class="status" id="status">
       Starting camera…
     </div>
 
-    <div class="actions">
+    <div class="manual">
+      <div class="manual-label">Can't scan the tag?</div>
 
-      <button
-        class="primary"
-        id="startButton"
-        type="button"
-        onclick="startScanner()"
-      >
-        Start Camera
+      <div class="manual-row">
+        <input
+          id="manualId"
+          type="text"
+          inputmode="text"
+          autocomplete="off"
+          autocapitalize="characters"
+          placeholder="P-001"
+          maxlength="10"
+        >
+
+        <button class="manual-button" onclick="submitManualId()">
+          Go
+        </button>
+      </div>
+    </div>
+
+    <div class="bottom-actions">
+      <button class="retry" id="retryButton" onclick="startScanner()">
+        Try Camera Again
       </button>
 
-      <button
-        class="secondary"
-        type="button"
-        onclick="returnToDashboard()"
-      >
+      <button class="cancel" onclick="returnToDashboard()">
         Cancel
       </button>
-
     </div>
 
   </div>
 
   <div class="tip">
-    Scan a Data Matrix or QR code containing a plant ID such as
-    <strong>P-001</strong>.
+    Data Matrix is recommended for your small plant tags. Keep the tag flat,
+    well lit and near the centre of the camera view.
   </div>
 
 </div>
@@ -238,95 +313,103 @@ let scanner=null;
 let scannerRunning=false;
 let scanComplete=false;
 
-document.addEventListener(
-  'DOMContentLoaded',
-  ()=>{
-    setTimeout(
-      startScanner,
-      300
+let selectedMode=
+  localStorage.getItem('plant-scan-action')||
+  'WATER';
+
+document.addEventListener('DOMContentLoaded',()=>{
+  selectMode(selectedMode,false);
+
+  document.getElementById('manualId')
+    .addEventListener('keydown',event=>{
+      if(event.key==='Enter'){
+        submitManualId();
+      }
+    });
+
+  setTimeout(startScanner,250);
+});
+
+function selectMode(mode,save=true){
+  if(!['WATER','REPOT','BOTH'].includes(mode)){
+    mode='WATER';
+  }
+
+  selectedMode=mode;
+
+  document.getElementById('modeWater')
+    .classList.toggle('selected',mode==='WATER');
+
+  document.getElementById('modeRepot')
+    .classList.toggle('selected',mode==='REPOT');
+
+  document.getElementById('modeBoth')
+    .classList.toggle('selected',mode==='BOTH');
+
+  if(save){
+    localStorage.setItem(
+      'plant-scan-action',
+      mode
     );
   }
-);
+}
 
 async function startScanner(){
-  if(
-    scannerRunning||
-    scanComplete
-  ){
-    return;
-  }
+  if(scannerRunning||scanComplete)return;
 
-  const startButton=
-    document.getElementById(
-      'startButton'
-    );
+  const retry=
+    document.getElementById('retryButton');
 
-  startButton.style.display=
-    'none';
+  retry.style.display='none';
 
-  setStatus(
-    'Requesting camera access…'
-  );
+  setStatus('Requesting rear camera…');
 
   try{
-    if(
-      typeof Html5Qrcode==='undefined'
-    ){
-      throw new Error(
-        'Scanner library did not load.'
-      );
+    if(typeof Html5Qrcode==='undefined'){
+      throw new Error('Scanner library did not load.');
     }
 
-    scanner=
-      new Html5Qrcode(
-        'reader',
-        {
-          formatsToSupport:[
-            Html5QrcodeSupportedFormats.DATA_MATRIX,
-            Html5QrcodeSupportedFormats.QR_CODE
-          ]
-        }
-      );
+    if(scanner){
+      try{
+        scanner.clear();
+      }catch(error){}
+    }
 
-    const config={
-      fps:15,
+    scanner=new Html5Qrcode(
+      'reader',
+      {
+        formatsToSupport:[
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      }
+    );
 
-      qrbox:(
-        viewfinderWidth,
-        viewfinderHeight
-      )=>{
-        const available=
-          Math.min(
-            viewfinderWidth,
-            viewfinderHeight
-          );
+    await scanner.start(
+      {facingMode:'environment'},
+      {
+        fps:15,
+        aspectRatio:4/3,
 
-        const size=
-          Math.min(
-            280,
+        qrbox:(width,height)=>{
+          const available=Math.min(width,height);
+
+          const size=Math.min(
+            290,
             Math.max(
-              180,
-              Math.floor(
-                available*.72
-              )
+              190,
+              Math.floor(available*.72)
             )
           );
 
-        return {
-          width:size,
-          height:size
-        };
-      },
+          return{
+            width:size,
+            height:size
+          };
+        },
 
-      disableFlip:true
-    };
-
-    await scanner.start(
-      {
-        facingMode:
-          'environment'
+        disableFlip:true
       },
-      config,
       handleScanSuccess,
       ()=>{}
     );
@@ -334,96 +417,87 @@ async function startScanner(){
     scannerRunning=true;
 
     setStatus(
-      'Camera ready — scan a plant tag.'
+      'Camera ready — place the code inside the centre box.'
     );
 
   }catch(error){
-    console.error(
-      error
-    );
+    console.error(error);
 
     scannerRunning=false;
 
     setStatus(
-      'Camera could not start: '+
-      getErrorMessage(error),
+      'Camera could not start: '+getErrorMessage(error),
       'error'
     );
 
-    startButton.style.display=
-      'block';
-
-    startButton.textContent=
-      'Try Again';
+    retry.style.display='block';
   }
 }
 
-async function handleScanSuccess(
-  decodedText,
-  decodedResult
-){
-  if(scanComplete){
-    return;
-  }
+function handleScanSuccess(decodedText){
+  if(scanComplete)return;
 
   const plantId=
-    normalizePlantId(
-      decodedText
-    );
+    normalizePlantId(decodedText);
 
   if(!plantId){
     setStatus(
-      'Code detected, but it does not contain a valid plant ID.',
+      'A code was detected, but it did not contain a plant ID such as P-001.',
       'error'
     );
 
     return;
   }
+
+  finishScan(plantId);
+}
+
+function submitManualId(){
+  const value=
+    document.getElementById('manualId').value;
+
+  const plantId=
+    normalizePlantId(value);
+
+  if(!plantId){
+    setStatus(
+      'Enter a plant ID such as P-001.',
+      'error'
+    );
+
+    return;
+  }
+
+  finishScan(plantId);
+}
+
+async function finishScan(plantId){
+  if(scanComplete)return;
 
   scanComplete=true;
 
   setStatus(
-    '✓ '+plantId+' scanned',
+    '✓ '+plantId+' — '+actionLabel(selectedMode),
     'success'
   );
 
-  if(navigator.vibrate){
-    navigator.vibrate(
-      80
-    );
-  }
-
   try{
-    if(
-      scanner&&
-      scannerRunning
-    ){
+    if(scanner&&scannerRunning){
       await scanner.stop();
-
       scannerRunning=false;
     }
+  }catch(error){}
 
-  }catch(error){
-    console.log(
-      error
-    );
-  }
+  setTimeout(()=>{
+    const url=
+      DASHBOARD_URL+
+      '?scan='+
+      encodeURIComponent(plantId)+
+      '&action='+
+      encodeURIComponent(selectedMode);
 
-  setTimeout(
-    ()=>{
-      const returnUrl=
-        DASHBOARD_URL+
-        '&scan='+
-        encodeURIComponent(
-          plantId
-        );
-
-      window.location.replace(
-        returnUrl
-      );
-    },
-    350
-  );
+    window.location.replace(url);
+  },250);
 }
 
 function normalizePlantId(value){
@@ -433,68 +507,42 @@ function normalizePlantId(value){
       .toUpperCase();
 
   const match=
-    text.match(
-      /\bP-\d{3,}\b/
-    );
+    text.match(/\bP-\d{3,}\b/);
 
-  return match
-    ?match[0]
-    :'';
+  return match?match[0]:'';
+}
+
+function actionLabel(action){
+  if(action==='REPOT')return 'Repot';
+  if(action==='BOTH')return 'Water + Repot';
+  return 'Water';
 }
 
 async function returnToDashboard(){
   try{
-    if(
-      scanner&&
-      scannerRunning
-    ){
+    if(scanner&&scannerRunning){
       await scanner.stop();
     }
-
   }catch(error){}
 
-  window.location.replace(
-    DASHBOARD_URL
-  );
+  window.location.replace(DASHBOARD_URL);
 }
 
-function setStatus(
-  message,
-  type=''
-){
+function setStatus(message,type=''){
   const status=
-    document.getElementById(
-      'status'
-    );
+    document.getElementById('status');
 
-  status.textContent=
-    message;
-
-  status.className=
-    'status'+
-    (
-      type
-        ?' '+type
-        :''
-    );
+  status.textContent=message;
+  status.className='status'+(type?' '+type:'');
 }
 
 function getErrorMessage(error){
-  if(!error){
-    return 'Unknown camera error.';
-  }
+  if(!error)return 'Unknown camera error.';
+  if(typeof error==='string')return error;
 
-  if(
-    typeof error==='string'
-  ){
-    return error;
-  }
-
-  return (
-    error.message||
+  return error.message||
     error.name||
-    String(error)
-  );
+    String(error);
 }
 </script>
 
