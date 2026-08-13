@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-
 <meta
   name="viewport"
   content="width=device-width,initial-scale=1,viewport-fit=cover"
@@ -121,7 +120,6 @@ h1{
   background:transparent;
   color:inherit;
   font-size:.95rem;
-  line-height:1;
   cursor:pointer;
 }
 
@@ -235,11 +233,7 @@ button{
   text-align:center;
 }
 
-
-/* ======================================
-   PHYSICAL TAG
-   14 mm wide × 40 mm tall
-====================================== */
+/* 14 mm × 40 mm physical plant tag */
 
 #labels{
   display:grid;
@@ -255,26 +249,22 @@ button{
   flex-direction:column;
   align-items:center;
   justify-content:flex-start;
-  padding:.8mm .7mm .7mm;
+  padding:.7mm;
   overflow:hidden;
   background:#fff;
   color:#000;
   outline:1px solid #ddd;
 }
 
-
-/* ======================================
-   SQUARE DATA MATRIX
-====================================== */
+/* Square Data Matrix */
 
 .matrix-area{
-  width:12.4mm;
-  height:14mm;
-  flex:0 0 14mm;
+  width:12.6mm;
+  height:13.5mm;
+  flex:0 0 13.5mm;
   display:flex;
   align-items:center;
   justify-content:center;
-  overflow:hidden;
 }
 
 .matrix-area canvas{
@@ -282,10 +272,7 @@ button{
   image-rendering:pixelated;
 }
 
-
-/* ======================================
-   HUMAN READABLE PLANT ID
-====================================== */
+/* P-001 text */
 
 .label-id{
   width:100%;
@@ -298,25 +285,12 @@ button{
   font-size:8pt;
   font-weight:800;
   line-height:1;
-  letter-spacing:.1mm;
   white-space:nowrap;
-  text-align:center;
 }
-
-
-/* ======================================
-   REMAINING BLANK TAG SPACE
-====================================== */
 
 .label-spacer{
   flex:1;
-  width:100%;
 }
-
-
-/* ======================================
-   PRINT
-====================================== */
 
 @media print{
   @page{
@@ -343,15 +317,11 @@ button{
   .label{
     outline:none;
     break-inside:avoid;
-    page-break-inside:avoid;
   }
 }
 
 @media(max-width:600px){
-  .settings{
-    grid-template-columns:1fr;
-  }
-
+  .settings,
   .buttons{
     grid-template-columns:1fr;
   }
@@ -366,8 +336,7 @@ button{
   <h1>🏷️ Plant Labels</h1>
 
   <div class="description">
-    Plants without a recorded label are included automatically.
-    To replace an existing label, select that plant below before generating.
+    New plants are included automatically. Existing labels can be selected below if you need to print a replacement.
   </div>
 
   <div class="section">
@@ -384,11 +353,10 @@ button{
 
   </div>
 
-
   <div class="section">
 
     <div class="section-title">
-      Remake an existing label
+      Remake existing label
     </div>
 
     <div class="old-row">
@@ -417,11 +385,10 @@ button{
 
   </div>
 
-
   <div class="section">
 
     <div class="section-title">
-      Physical dimensions
+      Label dimensions
     </div>
 
     <div class="settings">
@@ -456,8 +423,8 @@ button{
         <input
           id="matrixSize"
           type="number"
-          value="11.5"
-          min="8"
+          value="12"
+          min="9"
           max="12"
           step=".5"
         >
@@ -467,12 +434,10 @@ button{
 
   </div>
 
-
   <div class="buttons">
 
     <button
       class="generate"
-      type="button"
       onclick="generateLabels()"
     >
       Generate Labels
@@ -480,7 +445,6 @@ button{
 
     <button
       class="print"
-      type="button"
       onclick="printLabels()"
     >
       Print
@@ -488,7 +452,6 @@ button{
 
     <button
       class="download"
-      type="button"
       onclick="downloadLabelPngs()"
     >
       ⬇️ Save PNGs
@@ -496,7 +459,6 @@ button{
 
     <button
       class="done"
-      type="button"
       onclick="saveAndReturn()"
     >
       Save as Generated & Return
@@ -504,7 +466,6 @@ button{
 
     <button
       class="back"
-      type="button"
       onclick="returnWithoutSaving()"
     >
       Back Without Saving
@@ -519,18 +480,15 @@ button{
 
 </div>
 
-
 <div
   class="preview-title"
   id="previewTitle"
   style="display:none"
 >
-  Label preview — print at 100% / Actual Size
+  Preview — PNG output is optimised for 203 DPI
 </div>
 
-
 <div id="labels"></div>
-
 
 <script src="https://unpkg.com/bwip-js/dist/bwip-js-min.js"></script>
 
@@ -538,17 +496,17 @@ button{
 const APP_URL=
   'https://logancameron97.github.io/plant-dashboard-images/app.html';
 
+const PRINTER_DPI=203;
+
 let newIds=[];
 let oldIds=[];
 let remakeIds=[];
 let lastGeneratedIds=[];
 
-
 document.addEventListener(
   'DOMContentLoaded',
   initLabels
 );
-
 
 function initLabels(){
   const params=
@@ -576,19 +534,16 @@ function initLabels(){
   renderRemakes();
 }
 
-
 function parseIds(value){
-  const matches=
-    String(value||'')
-      .toUpperCase()
-      .match(/P-\d{3,}/g)||
-      [];
-
   return [
-    ...new Set(matches)
+    ...new Set(
+      String(value||'')
+        .toUpperCase()
+        .match(/P-\d{3,}/g)||
+        []
+    )
   ];
 }
-
 
 function renderNewPlants(){
   const container=
@@ -596,12 +551,9 @@ function renderNewPlants(){
       'newPlants'
     );
 
-  const count=
-    document.getElementById(
-      'newCount'
-    );
-
-  count.textContent=
+  document.getElementById(
+    'newCount'
+  ).textContent=
     '('+newIds.length+')';
 
   if(!newIds.length){
@@ -615,17 +567,14 @@ function renderNewPlants(){
 
   container.innerHTML=
     '<div class="chips">'+
-      newIds
-        .map(
-          id=>
-            '<span class="chip">'+
-            id+
-            '</span>'
-        )
-        .join('')+
+    newIds.map(
+      id=>
+        '<span class="chip">'+
+        id+
+        '</span>'
+    ).join('')+
     '</div>';
 }
-
 
 function renderOldSelect(){
   const select=
@@ -639,28 +588,20 @@ function renderOldSelect(){
     );
 
   select.innerHTML=
-    '<option value="">'+
-    'Select old plant…'+
-    '</option>'+
-    available
-      .map(
-        id=>
-          '<option value="'+id+'">'+
-          id+
-          '</option>'
-      )
-      .join('');
+    '<option value="">Select old plant…</option>'+
+    available.map(
+      id=>
+        '<option value="'+id+'">'+
+        id+
+        '</option>'
+    ).join('');
 }
 
-
 function addOldPlant(){
-  const select=
+  const id=
     document.getElementById(
       'oldPlantSelect'
-    );
-
-  const id=
-    select.value;
+    ).value;
 
   if(!id)return;
 
@@ -670,10 +611,8 @@ function addOldPlant(){
 
   renderRemakes();
   renderOldSelect();
-
   clearGeneratedPreview();
 }
-
 
 function removeRemake(id){
   remakeIds=
@@ -683,10 +622,8 @@ function removeRemake(id){
 
   renderRemakes();
   renderOldSelect();
-
   clearGeneratedPreview();
 }
-
 
 function renderRemakes(){
   const container=
@@ -694,31 +631,18 @@ function renderRemakes(){
       'remakePlants'
     );
 
-  if(!remakeIds.length){
-    container.innerHTML='';
-    return;
-  }
-
   container.innerHTML=
-    remakeIds
-      .map(
-        id=>
-          '<span class="chip remake-chip">'+
-          id+
-          '<button '+
-          'class="remove" '+
-          'type="button" '+
-          'aria-label="Remove '+id+'" '+
-          'onclick="removeRemake(\''+
-          id+
-          '\')">'+
-          '×'+
-          '</button>'+
-          '</span>'
-      )
-      .join('');
+    remakeIds.map(
+      id=>
+        '<span class="chip remake-chip">'+
+        id+
+        '<button class="remove" '+
+        'onclick="removeRemake(\''+id+'\')">'+
+        '×'+
+        '</button>'+
+        '</span>'
+    ).join('');
 }
-
 
 function clearGeneratedPreview(){
   lastGeneratedIds=[];
@@ -736,7 +660,6 @@ function clearGeneratedPreview(){
   ).style.display='none';
 }
 
-
 function getSelectedIds(){
   return [
     ...new Set(
@@ -748,10 +671,9 @@ function getSelectedIds(){
   ];
 }
 
-
-/* ======================================
-   GENERATE SQUARE DATA MATRIX LABELS
-====================================== */
+/* ==================================
+   GENERATE
+================================== */
 
 function generateLabels(){
   if(typeof bwipjs==='undefined'){
@@ -767,7 +689,7 @@ function generateLabels(){
 
   if(!ids.length){
     alert(
-      'There are no new labels. Add an existing plant above if you want to remake one.'
+      'There are no labels to generate.'
     );
 
     return;
@@ -793,7 +715,7 @@ function generateLabels(){
         document.getElementById(
           'matrixSize'
         ).value
-      )||11.5,
+      )||12,
       labelWidth-2
     );
 
@@ -809,7 +731,7 @@ function generateLabels(){
     labelWidth+
     'mm)';
 
-  let generatedCount=0;
+  const generated=[];
 
   ids.forEach(id=>{
 
@@ -827,7 +749,6 @@ function generateLabels(){
     label.style.height=
       labelHeight+'mm';
 
-
     const matrixArea=
       document.createElement(
         'div'
@@ -835,7 +756,6 @@ function generateLabels(){
 
     matrixArea.className=
       'matrix-area';
-
 
     const canvas=
       document.createElement(
@@ -848,26 +768,15 @@ function generateLabels(){
         {
           bcid:'datamatrix',
           text:id,
-
-          /*
-          Integer module scale.
-          This gives bwip-js a clean,
-          high-resolution square source.
-          */
-          scale:16,
-
-          /*
-          Explicit white quiet area.
-          */
+          scale:20,
           padding:3,
-
           backgroundcolor:'FFFFFF'
         }
       );
 
     }catch(error){
       console.error(
-        'Could not generate '+id,
+        id,
         error
       );
 
@@ -884,18 +793,13 @@ function generateLabels(){
       canvas
     );
 
-
-    const idText=
+    const text=
       document.createElement(
         'div'
       );
 
-    idText.className=
-      'label-id';
-
-    idText.textContent=
-      id;
-
+    text.className='label-id';
+    text.textContent=id;
 
     const spacer=
       document.createElement(
@@ -905,59 +809,48 @@ function generateLabels(){
     spacer.className=
       'label-spacer';
 
-
     label.appendChild(
       matrixArea
     );
 
     label.appendChild(
-      idText
+      text
     );
 
     label.appendChild(
       spacer
     );
 
-
     container.appendChild(
       label
     );
 
-    generatedCount++;
+    generated.push(id);
   });
 
-
-  if(!generatedCount){
-    alert(
-      'No labels could be generated.'
-    );
-
-    return;
-  }
-
-  lastGeneratedIds=[
-    ...ids
-  ];
+  lastGeneratedIds=
+    generated;
 
   document.getElementById(
     'previewTitle'
-  ).style.display='block';
+  ).style.display=
+    generated.length
+      ?'block'
+      :'none';
 
   showMessage(
-    generatedCount+
+    generated.length+
     (
-      generatedCount===1
+      generated.length===1
         ?' label generated.'
         :' labels generated.'
-    )+
-    ' Print at 100% / Actual Size.'
+    )
   );
 }
 
-
-/* ======================================
+/* ==================================
    PRINT
-====================================== */
+================================== */
 
 function printLabels(){
   if(!lastGeneratedIds.length){
@@ -971,83 +864,56 @@ function printLabels(){
   window.print();
 }
 
-
-/* ======================================
-   SAVE EACH LABEL AS SEPARATE PNG
-====================================== */
+/* ==================================
+   PNG DOWNLOAD
+================================== */
 
 async function downloadLabelPngs(){
-  try{
+  if(!lastGeneratedIds.length){
+    generateLabels();
+
     if(!lastGeneratedIds.length){
-      generateLabels();
-
-      if(!lastGeneratedIds.length){
-        return;
-      }
-    }
-
-    const labels=[
-      ...document.querySelectorAll(
-        '#labels .label'
-      )
-    ];
-
-    if(!labels.length){
       return;
     }
-
-    showMessage(
-      'Creating PNG files…'
-    );
-
-    let downloaded=0;
-
-    for(const label of labels){
-
-      const file=
-        await buildLabelPng(
-          label
-        );
-
-      downloadBlob(
-        file.blob,
-        file.plantId+'.png'
-      );
-
-      downloaded++;
-
-      await delay(
-        250
-      );
-    }
-
-    showMessage(
-      downloaded+
-      (
-        downloaded===1
-          ?' PNG saved.'
-          :' PNGs saved.'
-      )
-    );
-
-  }catch(error){
-    console.error(error);
-
-    alert(
-      'PNG files could not be created.\n\n'+
-      (
-        error&&error.message
-          ?error.message
-          :String(error)
-      )
-    );
   }
+
+  const labels=[
+    ...document.querySelectorAll(
+      '#labels .label'
+    )
+  ];
+
+  showMessage(
+    'Creating PNG files…'
+  );
+
+  let count=0;
+
+  for(const label of labels){
+    const file=
+      await buildLabelPng(
+        label
+      );
+
+    downloadBlob(
+      file.blob,
+      file.plantId+'.png'
+    );
+
+    count++;
+
+    await delay(250);
+  }
+
+  showMessage(
+    count+
+    (
+      count===1
+        ?' PNG saved.'
+        :' PNGs saved.'
+    )
+  );
 }
-
-
-/* ======================================
-   BUILD 300 DPI LABEL PNG
-====================================== */
 
 function buildLabelPng(label){
   return new Promise(
@@ -1056,24 +922,20 @@ function buildLabelPng(label){
       const plantId=
         label.dataset.plantId;
 
-      const matrixCanvas=
+      const source=
         label.querySelector(
           '.matrix-area canvas'
         );
 
-      if(
-        !plantId||
-        !matrixCanvas
-      ){
+      if(!plantId||!source){
         reject(
           new Error(
-            'The label could not be read.'
+            'Label could not be read.'
           )
         );
 
         return;
       }
-
 
       const widthMm=
         Number(
@@ -1089,22 +951,24 @@ function buildLabelPng(label){
           ).value
         )||40;
 
-      const matrixSizeMm=
+      const matrixMm=
         Math.min(
           Number(
             document.getElementById(
               'matrixSize'
             ).value
-          )||11.5,
+          )||12,
           widthMm-2
         );
 
-
       /*
-      300 DPI PNG output.
+      Render to the native approximate
+      dot density of the P21 instead of
+      generating 300-DPI artwork that
+      must then be resampled.
       */
       const pxPerMm=
-        300/25.4;
+        PRINTER_DPI/25.4;
 
       const widthPx=
         Math.round(
@@ -1118,7 +982,6 @@ function buildLabelPng(label){
           pxPerMm
         );
 
-
       const output=
         document.createElement(
           'canvas'
@@ -1130,7 +993,6 @@ function buildLabelPng(label){
       output.height=
         heightPx;
 
-
       const ctx=
         output.getContext(
           '2d'
@@ -1139,12 +1001,7 @@ function buildLabelPng(label){
       ctx.imageSmoothingEnabled=
         false;
 
-
-      /*
-      White label background.
-      */
-      ctx.fillStyle=
-        '#ffffff';
+      ctx.fillStyle='#fff';
 
       ctx.fillRect(
         0,
@@ -1153,17 +1010,13 @@ function buildLabelPng(label){
         heightPx
       );
 
-
-      /*
-      Draw square Data Matrix.
-      */
       const matrixPx=
         Math.round(
-          matrixSizeMm*
+          matrixMm*
           pxPerMm
         );
 
-      const matrixX=
+      const x=
         Math.round(
           (
             widthPx-
@@ -1171,39 +1024,27 @@ function buildLabelPng(label){
           )/2
         );
 
-      const matrixY=
+      const y=
         Math.round(
           .8*
           pxPerMm
         );
 
-
       ctx.drawImage(
-        matrixCanvas,
+        source,
         0,
         0,
-        matrixCanvas.width,
-        matrixCanvas.height,
-
-        matrixX,
-        matrixY,
+        source.width,
+        source.height,
+        x,
+        y,
         matrixPx,
         matrixPx
       );
 
-
-      /*
-      Draw P-001 immediately
-      underneath the code.
-      */
-      ctx.fillStyle=
-        '#000000';
-
-      ctx.textAlign=
-        'center';
-
-      ctx.textBaseline=
-        'middle';
+      ctx.fillStyle='#000';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
 
       ctx.font=
         'bold '+
@@ -1213,24 +1054,21 @@ function buildLabelPng(label){
         )+
         'px Arial';
 
-
       const textY=
         Math.round(
           (
             .8+
-            matrixSizeMm+
+            matrixMm+
             3
           )*
           pxPerMm
         );
-
 
       ctx.fillText(
         plantId,
         widthPx/2,
         textY
       );
-
 
       output.toBlob(
         blob=>{
@@ -1245,8 +1083,8 @@ function buildLabelPng(label){
           }
 
           resolve({
-            plantId:plantId,
-            blob:blob
+            plantId,
+            blob
           });
         },
         'image/png'
@@ -1254,7 +1092,6 @@ function buildLabelPng(label){
     }
   );
 }
-
 
 function downloadBlob(
   blob,
@@ -1290,7 +1127,6 @@ function downloadBlob(
   );
 }
 
-
 function delay(ms){
   return new Promise(
     resolve=>
@@ -1301,10 +1137,9 @@ function delay(ms){
   );
 }
 
-
-/* ======================================
-   SAVE LABEL STATUS
-====================================== */
+/* ==================================
+   SAVE STATUS
+================================== */
 
 function saveAndReturn(){
   if(!lastGeneratedIds.length){
@@ -1315,18 +1150,14 @@ function saveAndReturn(){
     return;
   }
 
-  const url=
+  window.location.replace(
     APP_URL+
     '?labelsGenerated='+
     encodeURIComponent(
       lastGeneratedIds.join(',')
-    );
-
-  window.location.replace(
-    url
+    )
   );
 }
-
 
 function returnWithoutSaving(){
   window.location.replace(
@@ -1334,18 +1165,14 @@ function returnWithoutSaving(){
   );
 }
 
-
 function showMessage(message){
   const el=
     document.getElementById(
       'message'
     );
 
-  el.textContent=
-    message;
-
-  el.style.display=
-    'block';
+  el.textContent=message;
+  el.style.display='block';
 }
 </script>
 
