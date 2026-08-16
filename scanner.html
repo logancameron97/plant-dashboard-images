@@ -446,6 +446,18 @@ const params=
 const QUICK_WATER=
   params.get('mode')==='water';
 
+const QUICK_WATER_SESSION=
+  String(
+    params.get('session')||
+    ''
+  ).trim();
+
+const QUICK_WATER_API=
+  String(
+    params.get('api')||
+    'https://script.google.com/macros/s/AKfycbyAwA-vQVo4DRhlkrIQCN5lHUrXifpexpeZ2FxWmid7M_KcALGA6iRlz0U7tdzK5RzK/exec'
+  ).trim();
+
 let scanner=null;
 let scanQueue=[];
 let lastDetectedId='';
@@ -605,6 +617,60 @@ function submitManualId(){
   );
 }
 
+function updateQuickWaterKiosk(
+  action,
+  plantId=''
+){
+  if(
+    !QUICK_WATER||
+    !QUICK_WATER_SESSION||
+    !QUICK_WATER_API
+  ){
+    return;
+  }
+
+  const url=
+    QUICK_WATER_API+
+    '?qwsAction='+
+    encodeURIComponent(
+      action
+    )+
+    '&session='+
+    encodeURIComponent(
+      QUICK_WATER_SESSION
+    )+
+    (
+      plantId
+        ?'&plantId='+
+          encodeURIComponent(
+            plantId
+          )
+        :''
+    )+
+    '&_ts='+
+    Date.now();
+
+  /*
+  Apps Script and GitHub Pages are
+  different origins. no-cors is enough
+  here because the kiosk only needs the
+  request to reach Apps Script; the
+  scanner does not need the response.
+  */
+  try{
+    fetch(
+      url,
+      {
+        method:'GET',
+        mode:'no-cors',
+        cache:'no-store',
+        keepalive:true
+      }
+    ).catch(()=>{});
+  }catch(error){}
+}
+
+
 function addToWaterQueue(
   plantId,
   timestamp
@@ -638,6 +704,15 @@ function addToWaterQueue(
       timestamp.toISOString()
   });
 
+  /*
+  Temporary kiosk state only.
+  This does NOT write Last_Watered.
+  */
+  updateQuickWaterKiosk(
+    'scan',
+    plantId
+  );
+
   if(navigator.vibrate){
     navigator.vibrate(65);
   }
@@ -663,6 +738,20 @@ function removeQueuedPlant(
     );
 
   renderBatch();
+
+  /*
+  The current shared kiosk endpoint tracks
+  additions, session cancel and save
+  completion. Removing an individual item
+  here removes it from what will be saved;
+  cancelling the session clears all
+  temporary kiosk statuses.
+  */
+  showFeedback(
+    plantId+
+    ' removed from save queue.',
+    'warning'
+  );
 }
 
 function renderBatch(){
@@ -863,6 +952,30 @@ async function saveQuickWater(){
 }
 
 async function cancelScanner(){
+  /*
+  Cancel only clears the temporary kiosk
+  Quick Water state. Nothing in the plant
+  database is changed.
+  */
+  if(QUICK_WATER){
+    updateQuickWaterKiosk(
+      'cancel'
+    );
+
+    /*
+    Give the fire-and-forget request a
+    moment to leave the browser before
+    navigating back to the app shell.
+    */
+    await new Promise(
+      resolve=>
+        setTimeout(
+          resolve,
+          120
+        )
+    );
+  }
+
   await stopScanner();
 
   window.location.href=
