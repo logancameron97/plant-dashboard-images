@@ -737,19 +737,21 @@ function removeQueuedPlant(
         plantId
     );
 
+  /*
+  Keep the kiosk's temporary Quick Water
+  queue synchronized with the phone.
+  This still does not change Last_Watered.
+  */
+  updateQuickWaterKiosk(
+    'remove',
+    plantId
+  );
+
   renderBatch();
 
-  /*
-  The current shared kiosk endpoint tracks
-  additions, session cancel and save
-  completion. Removing an individual item
-  here removes it from what will be saved;
-  cancelling the session clears all
-  temporary kiosk statuses.
-  */
   showFeedback(
     plantId+
-    ' removed from save queue.',
+    ' removed from queue.',
     'warning'
   );
 }
