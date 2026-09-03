@@ -364,11 +364,13 @@ button{
       <input
         id="manualId"
         type="text"
-        inputmode="text"
+        inputmode="numeric"
         autocomplete="off"
         autocapitalize="characters"
+        value="P-"
         placeholder="P-001"
         maxlength="10"
+        onfocus="ensureManualPrefix()"
       >
 
       <button
@@ -581,6 +583,53 @@ function handleScanSuccess(decodedText){
   );
 }
 
+function ensureManualPrefix(){
+  const input=
+    document.getElementById(
+      'manualId'
+    );
+
+  if(!input){
+    return;
+  }
+
+  const value=
+    String(input.value||'').trim();
+
+  if(
+    !value||
+    value.toUpperCase()==='P'
+  ){
+    input.value='P-';
+  }
+}
+
+function normalizeManualPlantId(value){
+  const raw=
+    String(value||'')
+      .trim()
+      .toUpperCase();
+
+  const normal=
+    normalizePlantId(raw);
+
+  if(normal){
+    return normal;
+  }
+
+  const digits=
+    raw.replace(/\D/g,'');
+
+  if(!digits){
+    return '';
+  }
+
+  return(
+    'P-'+
+    digits.padStart(3,'0')
+  );
+}
+
 function submitManualId(){
   const input=
     document.getElementById(
@@ -588,7 +637,7 @@ function submitManualId(){
     );
 
   const plantId=
-    normalizePlantId(
+    normalizeManualPlantId(
       input.value
     );
 
@@ -601,7 +650,7 @@ function submitManualId(){
     return;
   }
 
-  input.value='';
+  input.value='P-';
 
   if(QUICK_WATER){
     addToWaterQueue(
