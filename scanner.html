@@ -201,6 +201,97 @@ button{
   color:#fff;
 }
 
+.plant-picker{
+  display:none;
+  margin-top:14px;
+  padding:12px;
+  background:rgba(255,255,255,.74);
+  border:1px solid var(--border);
+  border-radius:14px;
+}
+
+.water-mode .plant-picker{
+  display:block;
+}
+
+.plant-picker-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+.plant-picker-title{
+  color:#5f786b;
+  font-size:.72rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+
+.plant-picker-hint{
+  color:#86948c;
+  font-size:.62rem;
+  font-weight:700;
+}
+
+.plant-picker-list{
+  max-height:245px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:#fff;
+  -webkit-overflow-scrolling:touch;
+}
+
+.plant-picker-empty{
+  padding:13px;
+  color:#87978e;
+  font-size:.72rem;
+  text-align:center;
+}
+
+.plant-picker-row{
+  display:grid;
+  grid-template-columns:24px 66px minmax(0,1fr);
+  align-items:center;
+  gap:7px;
+  min-height:39px;
+  padding:7px 8px;
+  cursor:pointer;
+}
+
+.plant-picker-row + .plant-picker-row{
+  border-top:1px solid #edf1ef;
+}
+
+.plant-picker-row input{
+  width:17px;
+  height:17px;
+  accent-color:var(--blue);
+}
+
+.plant-picker-id{
+  color:#314a3e;
+  font-size:.69rem;
+  font-weight:900;
+}
+
+.plant-picker-name{
+  min-width:0;
+  color:#687a70;
+  font-size:.69rem;
+  font-weight:750;
+  line-height:1.15;
+  overflow-wrap:anywhere;
+}
+
+.plant-picker-row.selected{
+  background:#eef7fb;
+}
+
 .batch{
   display:none;
   margin-top:14px;
@@ -384,6 +475,29 @@ button{
 
   </div>
 
+  <div class="plant-picker">
+
+    <div class="plant-picker-heading">
+      <div class="plant-picker-title">
+        Select plants
+      </div>
+
+      <div class="plant-picker-hint">
+        Tap one or more
+      </div>
+    </div>
+
+    <div
+      class="plant-picker-list"
+      id="plantPickerList"
+    >
+      <div class="plant-picker-empty">
+        Loading plants…
+      </div>
+    </div>
+
+  </div>
+
   <div class="batch">
 
     <div class="batch-heading">
@@ -406,7 +520,7 @@ button{
       id="batchList"
     >
       <div class="batch-empty">
-        Scan your first plant.
+        Scan, type, or select a plant above.
       </div>
     </div>
 
@@ -460,6 +574,11 @@ const QUICK_WATER_API=
     'https://script.google.com/macros/s/AKfycbyAwA-vQVo4DRhlkrIQCN5lHUrXifpexpeZ2FxWmid7M_KcALGA6iRlz0U7tdzK5RzK/exec'
   ).trim();
 
+const QUICK_WATER_PLANTS=
+  parseQuickWaterPlants(
+    params.get('plants')
+  );
+
 let scanner=null;
 let scanQueue=[];
 let lastDetectedId='';
@@ -467,13 +586,62 @@ let lastDetectedAt=0;
 let feedbackTimer=null;
 let scanLocked=false;
 
+function parseQuickWaterPlants(value){
+  if(!value){
+    return[];
+  }
+
+  try{
+    const parsed=
+      JSON.parse(value);
+
+    if(!Array.isArray(parsed)){
+      return[];
+    }
+
+    return parsed
+      .map(item=>{
+        if(
+          !Array.isArray(item)||
+          item.length<1
+        ){
+          return null;
+        }
+
+        const plantId=
+          normalizePlantId(
+            item[0]
+          );
+
+        if(!plantId){
+          return null;
+        }
+
+        return{
+          plantId:plantId,
+          name:String(
+            item[1]||
+            'Plant'
+          ).trim()||
+          'Plant'
+        };
+      })
+      .filter(Boolean);
+
+  }catch(error){
+    return[];
+  }
+}
+
 document.addEventListener(
   'DOMContentLoaded',
   init
 );
 
 async function init(){
+
   if(QUICK_WATER){
+
     document.body.classList.add(
       'water-mode'
     );
@@ -487,14 +655,18 @@ async function init(){
       'scanHint'
     ).textContent=
       'Scan plants continuously. Nothing is saved until you tap Save.';
+
+    renderPlantPicker();
   }
 
   renderBatch();
 
   if(!window.Html5Qrcode){
+
     showCameraError(
       'QR scanner library could not be loaded.'
     );
+
     return;
   }
 
@@ -504,6 +676,7 @@ async function init(){
     );
 
   try{
+
     await scanner.start(
       {
         facingMode:'environment'
@@ -518,7 +691,9 @@ async function init(){
       handleScanSuccess,
       ()=>{}
     );
+
   }catch(error){
+
     console.error(error);
 
     showCameraError(
@@ -528,6 +703,7 @@ async function init(){
 }
 
 function normalizePlantId(value){
+
   const match=
     String(value||'')
       .trim()
@@ -540,19 +716,19 @@ function normalizePlantId(value){
 }
 
 function handleScanSuccess(decodedText){
+
   const plantId=
-    normalizePlantId(decodedText);
+    normalizePlantId(
+      decodedText
+    );
 
   if(!plantId){
     return;
   }
 
-  const now=Date.now();
+  const now=
+    Date.now();
 
-  /*
-  Prevent the camera from repeatedly
-  reading the same visible QR every frame.
-  */
   if(
     plantId===lastDetectedId&&
     now-lastDetectedAt<1800
@@ -560,10 +736,14 @@ function handleScanSuccess(decodedText){
     return;
   }
 
-  lastDetectedId=plantId;
-  lastDetectedAt=now;
+  lastDetectedId=
+    plantId;
+
+  lastDetectedAt=
+    now;
 
   if(QUICK_WATER){
+
     addToWaterQueue(
       plantId,
       new Date()
@@ -584,6 +764,7 @@ function handleScanSuccess(decodedText){
 }
 
 function ensureManualPrefix(){
+
   const input=
     document.getElementById(
       'manualId'
@@ -594,7 +775,10 @@ function ensureManualPrefix(){
   }
 
   const value=
-    String(input.value||'').trim();
+    String(
+      input.value||
+      ''
+    ).trim();
 
   if(
     !value||
@@ -605,20 +789,26 @@ function ensureManualPrefix(){
 }
 
 function normalizeManualPlantId(value){
+
   const raw=
     String(value||'')
       .trim()
       .toUpperCase();
 
   const normal=
-    normalizePlantId(raw);
+    normalizePlantId(
+      raw
+    );
 
   if(normal){
     return normal;
   }
 
   const digits=
-    raw.replace(/\D/g,'');
+    raw.replace(
+      /\D/g,
+      ''
+    );
 
   if(!digits){
     return '';
@@ -626,11 +816,15 @@ function normalizeManualPlantId(value){
 
   return(
     'P-'+
-    digits.padStart(3,'0')
+    digits.padStart(
+      3,
+      '0'
+    )
   );
 }
 
 function submitManualId(){
+
   const input=
     document.getElementById(
       'manualId'
@@ -642,6 +836,7 @@ function submitManualId(){
     );
 
   if(!plantId){
+
     showFeedback(
       'Enter a valid plant ID such as P-001.',
       'warning'
@@ -653,6 +848,7 @@ function submitManualId(){
   input.value='P-';
 
   if(QUICK_WATER){
+
     addToWaterQueue(
       plantId,
       new Date()
@@ -666,10 +862,154 @@ function submitManualId(){
   );
 }
 
+function renderPlantPicker(){
+
+  const list=
+    document.getElementById(
+      'plantPickerList'
+    );
+
+  if(!list){
+    return;
+  }
+
+  if(!QUICK_WATER_PLANTS.length){
+
+    list.innerHTML=
+      '<div class="plant-picker-empty">'+
+      'Plant list unavailable. You can still scan or type a QR number.'+
+      '</div>';
+
+    return;
+  }
+
+  list.innerHTML=
+    QUICK_WATER_PLANTS
+      .map(plant=>{
+
+        const checked=
+          scanQueue.some(
+            item=>
+              item.plantId===
+              plant.plantId
+          );
+
+        return(
+          '<label class="plant-picker-row '+
+            (checked?'selected':'')+
+            '">'+
+
+            '<input '+
+              'type="checkbox" '+
+              'data-plant-id="'+
+              escapeHtml(
+                plant.plantId
+              )+
+              '" '+
+              (checked?'checked ':'')+
+              'onchange="togglePickerPlant(this)">'+
+
+            '<span class="plant-picker-id">'+
+              escapeHtml(
+                plant.plantId
+              )+
+            '</span>'+
+
+            '<span class="plant-picker-name">'+
+              escapeHtml(
+                plant.name
+              )+
+            '</span>'+
+
+          '</label>'
+        );
+      })
+      .join('');
+}
+
+function syncPlantPickerChecks(){
+
+  const list=
+    document.getElementById(
+      'plantPickerList'
+    );
+
+  if(!list){
+    return;
+  }
+
+  const queued=
+    new Set(
+      scanQueue.map(
+        item=>
+          item.plantId
+      )
+    );
+
+  list
+    .querySelectorAll(
+      'input[data-plant-id]'
+    )
+    .forEach(input=>{
+
+      const checked=
+        queued.has(
+          input.dataset.plantId
+        );
+
+      input.checked=
+        checked;
+
+      const row=
+        input.closest(
+          '.plant-picker-row'
+        );
+
+      if(row){
+
+        row.classList.toggle(
+          'selected',
+          checked
+        );
+      }
+    });
+}
+
+function togglePickerPlant(input){
+
+  if(!input){
+    return;
+  }
+
+  const plantId=
+    normalizePlantId(
+      input.dataset.plantId
+    );
+
+  if(!plantId){
+    return;
+  }
+
+  if(input.checked){
+
+    addToWaterQueue(
+      plantId,
+      new Date()
+    );
+
+  }else{
+
+    removeQueuedPlant(
+      plantId
+    );
+  }
+}
+
 function updateQuickWaterKiosk(
   action,
   plantId=''
 ){
+
   if(
     !QUICK_WATER||
     !QUICK_WATER_SESSION||
@@ -699,14 +1039,8 @@ function updateQuickWaterKiosk(
     '&_ts='+
     Date.now();
 
-  /*
-  Apps Script and GitHub Pages are
-  different origins. no-cors is enough
-  here because the kiosk only needs the
-  request to reach Apps Script; the
-  scanner does not need the response.
-  */
   try{
+
     fetch(
       url,
       {
@@ -716,14 +1050,15 @@ function updateQuickWaterKiosk(
         keepalive:true
       }
     ).catch(()=>{});
+
   }catch(error){}
 }
-
 
 function addToWaterQueue(
   plantId,
   timestamp
 ){
+
   const existing=
     scanQueue.find(
       item=>
@@ -732,6 +1067,7 @@ function addToWaterQueue(
     );
 
   if(existing){
+
     showFeedback(
       plantId+
       ' is already in the queue.',
@@ -739,6 +1075,7 @@ function addToWaterQueue(
     );
 
     if(navigator.vibrate){
+
       navigator.vibrate(
         [30,40,30]
       );
@@ -753,10 +1090,6 @@ function addToWaterQueue(
       timestamp.toISOString()
   });
 
-  /*
-  Temporary kiosk state only.
-  This does NOT write Last_Watered.
-  */
   updateQuickWaterKiosk(
     'scan',
     plantId
@@ -779,6 +1112,7 @@ function addToWaterQueue(
 function removeQueuedPlant(
   plantId
 ){
+
   scanQueue=
     scanQueue.filter(
       item=>
@@ -786,11 +1120,6 @@ function removeQueuedPlant(
         plantId
     );
 
-  /*
-  Keep the kiosk's temporary Quick Water
-  queue synchronized with the phone.
-  This still does not change Last_Watered.
-  */
   updateQuickWaterKiosk(
     'remove',
     plantId
@@ -806,6 +1135,9 @@ function removeQueuedPlant(
 }
 
 function renderBatch(){
+
+  syncPlantPickerChecks();
+
   const list=
     document.getElementById(
       'batchList'
@@ -821,7 +1153,11 @@ function renderBatch(){
       'saveButton'
     );
 
-  if(!list||!count||!save){
+  if(
+    !list||
+    !count||
+    !save
+  ){
     return;
   }
 
@@ -837,9 +1173,10 @@ function renderBatch(){
     scanQueue.length===0;
 
   if(!scanQueue.length){
+
     list.innerHTML=
       '<div class="batch-empty">'+
-      'Scan your first plant.'+
+      'Scan, type, or select a plant above.'+
       '</div>';
 
     return;
@@ -848,6 +1185,7 @@ function renderBatch(){
   list.innerHTML=
     scanQueue
       .map(item=>{
+
         const date=
           new Date(
             item.wateredAt
@@ -874,13 +1212,19 @@ function renderBatch(){
 
             '<div class="batch-time">'+
               'Watered at: '+
-              escapeHtml(time)+
+              escapeHtml(
+                time
+              )+
             '</div>'+
 
             '<button '+
               'class="batch-remove" '+
               'type="button" '+
-              'aria-label="Remove '+escapeHtml(item.plantId)+'" '+
+              'aria-label="Remove '+
+                escapeHtml(
+                  item.plantId
+                )+
+              '" '+
               'onclick="removeQueuedPlant(\''+
                 escapeJs(
                   item.plantId
@@ -899,6 +1243,7 @@ function showFeedback(
   message,
   type
 ){
+
   const feedback=
     document.getElementById(
       'feedback'
@@ -919,15 +1264,19 @@ function showFeedback(
   );
 
   feedbackTimer=
-    setTimeout(()=>{
-      feedback.className=
-        'feedback';
-    },950);
+    setTimeout(
+      ()=>{
+        feedback.className=
+          'feedback';
+      },
+      950
+    );
 }
 
 function showCameraError(
   message
 ){
+
   const error=
     document.getElementById(
       'cameraError'
@@ -941,6 +1290,7 @@ function showCameraError(
 }
 
 async function stopScanner(){
+
   if(!scanner){
     return;
   }
@@ -959,6 +1309,7 @@ async function stopScanner(){
 async function redirectNormalScan(
   plantId
 ){
+
   await stopScanner();
 
   window.location.href=
@@ -970,6 +1321,7 @@ async function redirectNormalScan(
 }
 
 async function saveQuickWater(){
+
   if(!scanQueue.length){
     return;
   }
@@ -981,16 +1333,13 @@ async function saveQuickWater(){
 
   await stopScanner();
 
-  /*
-  Compact URL format:
-  P-001|ISO,P-002|ISO,...
-  */
   const batch=
     scanQueue
-      .map(item=>
-        item.plantId+
-        '|'+
-        item.wateredAt
+      .map(
+        item=>
+          item.plantId+
+          '|'+
+          item.wateredAt
       )
       .join(',');
 
@@ -1003,21 +1352,13 @@ async function saveQuickWater(){
 }
 
 async function cancelScanner(){
-  /*
-  Cancel only clears the temporary kiosk
-  Quick Water state. Nothing in the plant
-  database is changed.
-  */
+
   if(QUICK_WATER){
+
     updateQuickWaterKiosk(
       'cancel'
     );
 
-    /*
-    Give the fire-and-forget request a
-    moment to leave the browser before
-    navigating back to the app shell.
-    */
     await new Promise(
       resolve=>
         setTimeout(
@@ -1034,18 +1375,45 @@ async function cancelScanner(){
 }
 
 function escapeHtml(value){
-  return String(value??'')
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#039;');
+
+  return String(
+    value??''
+  )
+    .replace(
+      /&/g,
+      '&amp;'
+    )
+    .replace(
+      /</g,
+      '&lt;'
+    )
+    .replace(
+      />/g,
+      '&gt;'
+    )
+    .replace(
+      /"/g,
+      '&quot;'
+    )
+    .replace(
+      /'/g,
+      '&#039;'
+    );
 }
 
 function escapeJs(value){
-  return String(value??'')
-    .replace(/\\/g,'\\\\')
-    .replace(/'/g,"\\'");
+
+  return String(
+    value??''
+  )
+    .replace(
+      /\\/g,
+      '\\\\'
+    )
+    .replace(
+      /'/g,
+      "\\'"
+    );
 }
 </script>
 
